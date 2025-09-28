@@ -16,7 +16,7 @@ class GC {
   GCStat stats;
   std::mutex mtx;
   State state = IDLE; // or use a mutex?
-  std::uint8_t allocCount = 0;
+  std::uint8_t objCount = 0;
 
   ~GC() {
     std::vector<Meta *> metas;
@@ -36,6 +36,19 @@ class GC {
       delete obj;
     for (Meta *meta : metas)
       delete meta;
+  }
+
+  void track(Object *obj) {
+    // try collecting first
+    if (++objCount == 255) { // objCount wraps around, so we check once every 256 allocations
+      if (stats.shouldDoYoungGC(youngTracked.size()))
+        collect(false);
+      else if (stats.shouldDoOldGC(oldTracked.size()))
+        collect(true);
+    }
+
+    std::lock_guard<std::mutex> lk(mtx);
+    youngTracked.insert(obj);
   }
 
   void untrack(Object *obj) {
@@ -114,30 +127,12 @@ class GC {
     return outRefs.size();
   }
 
-  inline void tryCollect() {
-    if (++allocCount == 255) { // allocCount wraps around, so we check once every 256 allocations
-      if (stats.shouldDoYoungGC(youngTracked.size()))
-        collect(false);
-      else if (stats.shouldDoOldGC(oldTracked.size()))
-        collect(true);
-    }
-  }
-
-  template <IsObject T> friend class AutoRef;
+  template <typename T> friend class AutoRef;
 
 public:
   static GC &gc() {
     static GC gc;
     return gc;
-  }
-
-  template <IsObject T, typename... Args> AutoRef<T> make(Args &&...args) {
-    tryCollect(); // collect first
-
-    std::lock_guard<std::mutex> lk(mtx);
-    T *obj = new T(std::forward<Args>(args)...);
-    youngTracked.insert(obj);
-    return AutoRef<T>(obj);
   }
 
   void pause() { state = PAUSED; }

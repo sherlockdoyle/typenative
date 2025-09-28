@@ -3,7 +3,6 @@
 #include <atomic>
 #include <cstddef>
 #include <functional>
-#include <type_traits>
 
 struct Meta {
   std::atomic_size_t ref{0}, weak{1};
@@ -24,11 +23,6 @@ private:
   enum { MARKED_SHIFT = 1 << 1 };
 };
 
-class Object;
-template <class T>
-concept IsObject = std::is_convertible_v<T *, Object *>;
-template <IsObject T> class AutoRef;
-
 class Object {
   Meta *meta;
 
@@ -37,14 +31,19 @@ class Object {
   Object &operator=(Object &&) = delete;
   Object &operator=(const Object &) = delete;
 
-  template <IsObject T> friend class AutoRef;
+  template <typename T> friend class AutoRef;
   friend class GC;
 
 public:
   Object() : meta(new Meta()) {}
   virtual ~Object() {}
 
-  virtual void $forEachChild(std::function<void(Object *)> visitor) const {}
+  template <typename T> bool operator==(const T &that) const { return this == that; }
+  template <typename T> bool operator!=(const T &that) const { return this != that; }
+
+  virtual std::string toString() const { return typeid(*this).name(); }
+
+  virtual void $forEachChild(std::function<void(Object *)> visitor) const noexcept {}
 };
 
 // Recipe taken from https://www.scs.stanford.edu/~dm/blog/va-opt.html
@@ -62,4 +61,6 @@ public:
 // we (ab)use the arrow operator to get the object!
 #define VISITOR_CALL(m) visitor(this->m.operator->());
 #define REGISTER_CHILDREN(...)                                                                                         \
-  void $forEachChild(std::function<void(Object *)> visitor) const override { FOR_EACH(VISITOR_CALL, __VA_ARGS__) }
+  void $forEachChild(std::function<void(Object *)> visitor) const noexcept override {                                  \
+    FOR_EACH(VISITOR_CALL, __VA_ARGS__)                                                                                \
+  }

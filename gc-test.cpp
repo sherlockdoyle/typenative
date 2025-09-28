@@ -1,7 +1,7 @@
-#include "src/rt/core/AutoRef.hpp"
-#include "src/rt/core/Object.hpp"
-#include "src/rt/core/WeakRef.hpp"
-#include "src/rt/core/gc.hpp"
+#include "src/core/rt/AutoRef.hpp"
+#include "src/core/rt/Object.hpp"
+#include "src/core/rt/WeakRef.hpp"
+#include "src/core/rt/gc.hpp"
 #include <atomic>
 #include <chrono>
 #include <iostream>
@@ -82,7 +82,7 @@ void weakLocker(WeakRef<Node> w, std::atomic_bool &stop) {
 int main() {
   {
     std::cout << "=== Basic ownership test ===" << std::endl;
-    auto a = GC::gc().make<Node>("A");
+    auto a = AutoRef<Node>::make("A");
     std::cout << "A ref: " << a.getRef() << ", weak: " << a.getWeak() << std::endl;
     {
       AutoRef<Node> a2 = a;
@@ -95,7 +95,7 @@ int main() {
   WeakRef<Node> w;
   {
     std::cout << "=== WeakRef expiration test ===" << std::endl;
-    auto b = GC::gc().make<Node>("B");
+    auto b = AutoRef<Node>::make("B");
     std::cout << "B ref: " << b.getRef() << ", weak: " << b.getWeak() << std::endl;
     w = b;
     std::cout << "B after weak ref: " << b.getRef() << ", weak: " << b.getWeak() << std::endl;
@@ -106,8 +106,8 @@ int main() {
   std::cout << std::endl;
   {
     std::cout << "=== Cycle without GC ===" << std::endl;
-    auto a = GC::gc().make<Node>("A");
-    auto b = GC::gc().make<Node>("B");
+    auto a = AutoRef<Node>::make("A");
+    auto b = AutoRef<Node>::make("B");
     a->next = b;
     b->next = a;
     std::cout << "A ref: " << a.getRef() << ", weak: " << a.getWeak() << std::endl;
@@ -124,11 +124,11 @@ int main() {
   std::cout << std::endl;
   {
     std::cout << "=== Mixed scenario ===" << std::endl;
-    auto a = GC::gc().make<Node>("A");
-    auto b = GC::gc().make<Node>("B");
+    auto a = AutoRef<Node>::make("A");
+    auto b = AutoRef<Node>::make("B");
     a->child = b;
     b->next = a;
-    b->child = GC::gc().make<Node>("C");
+    b->child = AutoRef<Node>::make("C");
     std::cout << "A ref: " << a.getRef() << ", weak: " << a.getWeak() << std::endl;
     std::cout << "B ref: " << b.getRef() << ", weak: " << b.getWeak() << std::endl;
     std::cout << "C ref: " << b->child.getRef() << ", weak: " << b->child.getWeak() << std::endl;
@@ -138,7 +138,7 @@ int main() {
   std::cout << std::endl;
   {
     std::cout << "=== Move semantics test ===" << std::endl;
-    auto m1 = GC::gc().make<Node>("M1");
+    auto m1 = AutoRef<Node>::make("M1");
     std::cout << "M1 ref: " << m1.getRef() << ", weak: " << m1.getWeak() << std::endl;
     auto m2 = std::move(m1);
     std::cout << "After move M2 ref: " << m2.getRef() << ", weak: " << m2.getWeak() << std::endl;
@@ -150,7 +150,7 @@ int main() {
     std::cout << "=== Many WeakRefs test ===" << std::endl;
     WeakRef<Node> w1, w2, w3;
     {
-      auto x = GC::gc().make<Node>("X");
+      auto x = AutoRef<Node>::make("X");
       w1 = x;
       w2 = x;
       w3 = w1;
@@ -164,7 +164,7 @@ int main() {
   std::cout << std::endl;
   {
     std::cout << "=== Self-cycle test ===" << std::endl;
-    auto s = GC::gc().make<Node>("Self");
+    auto s = AutoRef<Node>::make("Self");
     s->next = s;
     std::cout << "Self ref: " << s.getRef() << ", weak: " << s.getWeak() << std::endl;
     w = s;
@@ -177,8 +177,8 @@ int main() {
   WeakRef<WNode> w2;
   {
     std::cout << "=== Weak member vs strong ===" << std::endl;
-    auto p = GC::gc().make<WNode>("Parent");
-    auto c = GC::gc().make<WNode>("Child");
+    auto p = AutoRef<WNode>::make("Parent");
+    auto c = AutoRef<WNode>::make("Child");
     p->strong_child = c;
     p->weak_child = c;
     w2 = c;
@@ -191,8 +191,8 @@ int main() {
   std::cout << std::endl;
   {
     std::cout << "=== Destructor locking WeakRef ===" << std::endl;
-    auto a = GC::gc().make<FinalNode>("A");
-    auto b = GC::gc().make<FinalNode>("B");
+    auto a = AutoRef<FinalNode>::make("A");
+    auto b = AutoRef<FinalNode>::make("B");
     a->other = b;
     b->other = a;
     std::cout << "A ref: " << a.getRef() << ", weak: " << a.getWeak() << std::endl;
@@ -203,10 +203,10 @@ int main() {
   std::cout << std::endl;
   {
     std::cout << "=== Long chain test ===" << std::endl;
-    auto head = GC::gc().make<Node>("Chain0");
+    auto head = AutoRef<Node>::make("Chain0");
     auto cur = head;
     for (int i = 1; i < 20; ++i) {
-      auto next = GC::gc().make<Node>("Chain" + std::to_string(i));
+      auto next = AutoRef<Node>::make("Chain" + std::to_string(i));
       cur->next = next;
       cur = next;
     }
@@ -217,9 +217,9 @@ int main() {
   std::cout << std::endl;
   {
     std::cout << "=== Multiple roots test ===" << std::endl;
-    auto root1 = GC::gc().make<Node>("Root1");
-    auto root2 = GC::gc().make<Node>("Root2");
-    auto shared = GC::gc().make<Node>("Shared");
+    auto root1 = AutoRef<Node>::make("Root1");
+    auto root2 = AutoRef<Node>::make("Root2");
+    auto shared = AutoRef<Node>::make("Shared");
     root1->child = shared;
     root2->child = shared;
     w = shared;
@@ -232,7 +232,7 @@ int main() {
     std::cout << "=== Repeated GC test ===" << std::endl;
     // GC::gc().collect();
     // GC::gc().collect();
-    auto a = GC::gc().make<Node>("A");
+    auto a = AutoRef<Node>::make("A");
     // GC::gc().collect();
     // GC::gc().collect();
   }
@@ -243,7 +243,7 @@ int main() {
     std::cout << "=== Stress random graph test ===" << std::endl;
     std::vector<AutoRef<Node>> nodes;
     for (int i = 0; i < N; ++i)
-      nodes.push_back(GC::gc().make<Node>("N" + std::to_string(i)));
+      nodes.push_back(AutoRef<Node>::make("N" + std::to_string(i)));
 
     std::mt19937 rng(S);
     std::uniform_int_distribution<int> idx(0, nodes.size() - 1);
@@ -260,8 +260,8 @@ int main() {
   std::cout << std::endl;
   {
     std::cout << "=== Destructor access other test ===" << std::endl;
-    auto a = GC::gc().make<TouchNode>("A");
-    auto b = GC::gc().make<TouchNode>("B");
+    auto a = AutoRef<TouchNode>::make("A");
+    auto b = AutoRef<TouchNode>::make("B");
     a->other = b;
     b->other = a;
     std::cout << "A ref: " << a.getRef() << ", weak: " << a.getWeak() << std::endl;
@@ -276,7 +276,7 @@ int main() {
     WeakRef<Node> w;
     std::thread t1;
     {
-      auto strong = GC::gc().make<Node>("Concurrent");
+      auto strong = AutoRef<Node>::make("Concurrent");
       w = strong;
       t1 = std::thread(weakLocker, w, std::ref(stopFlag));
       std::this_thread::sleep_for(std::chrono::milliseconds(50));

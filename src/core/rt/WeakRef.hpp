@@ -4,11 +4,11 @@
 #include "Object.hpp"
 #include <cstddef>
 
-template <IsObject T> class WeakRef {
+template <typename T> class WeakRef {
   Meta *meta = nullptr;
   T *obj = nullptr;
 
-  void safeIncRef() noexcept {
+  void safeIncRef() const noexcept {
     if (meta)
       meta->incWeak();
   }
@@ -49,7 +49,7 @@ public:
     return *this;
   }
 
-  WeakRef &operator=(WeakRef &that) noexcept {
+  WeakRef &operator=(const WeakRef &that) noexcept {
     if (meta != that.meta) {
       that.safeIncRef();
       safeDecRef();
@@ -70,6 +70,9 @@ public:
   explicit operator bool() const noexcept {
     return obj && meta->getRef(); // meta will be present if obj is present
   }
+
+  bool operator==(const WeakRef &that) const noexcept { return meta == that.meta; }
+  bool operator!=(const WeakRef &that) const noexcept { return meta != that.meta; }
 
   AutoRef<T> lock() noexcept {
     AutoRef<T> ret;

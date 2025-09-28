@@ -7,15 +7,13 @@
 #include <new>
 #include <utility>
 
-template <IsObject T> class WeakRef;
+template <typename T> class WeakRef;
 
-template <IsObject T> class AutoRef {
+template <typename T> class AutoRef {
   Meta *meta = nullptr;
   T *obj = nullptr;
 
-  AutoRef(T *obj) noexcept : meta(obj->meta), obj(obj) { meta->incRef(); }
-
-  void safeIncRef() noexcept {
+  void safeIncRef() const noexcept {
     if (meta)
       meta->incRef();
   }
@@ -32,11 +30,11 @@ template <IsObject T> class AutoRef {
   }
 
   friend class WeakRef<T>;
-  friend class GC;
 
 public:
   constexpr AutoRef() noexcept : meta(nullptr), obj(nullptr) {}
   constexpr AutoRef(std::nullptr_t) noexcept : meta(nullptr), obj(nullptr) {}
+  AutoRef(T *obj) noexcept : meta(obj->meta), obj(obj) { meta->incRef(); }
 
   AutoRef(const AutoRef &that) noexcept : meta(that.meta), obj(that.obj) { safeIncRef(); }
   AutoRef(AutoRef &&that) noexcept : meta(std::exchange(that.meta, nullptr)), obj(std::exchange(that.obj, nullptr)) {}
@@ -63,7 +61,7 @@ public:
     return *this;
   }
 
-  AutoRef &operator=(AutoRef &that) noexcept {
+  AutoRef &operator=(const AutoRef &that) noexcept {
     if (obj != that.obj) {
       that.safeIncRef();
       safeDecRef();
@@ -89,10 +87,38 @@ public:
     return obj && meta->getRef(); // meta will be present if obj is present
   }
 
+  template <typename U> bool operator==(const AutoRef<U> &that) const noexcept { return obj == that.obj; }
+  template <typename U> bool operator==(const U *that) const noexcept { return obj == that; }
+  template <typename U> friend bool operator==(const U *that, const AutoRef<T> &ref) { return that == ref.obj; }
+  template <typename U> bool operator!=(const AutoRef<U> &that) const noexcept { return obj != that.obj; }
+  template <typename U> bool operator!=(const U *that) const noexcept { return obj != that; }
+  template <typename U> friend bool operator!=(const U *that, const AutoRef<T> &ref) { return that != ref.obj; }
+#define OP(op)                                                                                                         \
+  template <typename U> bool operator op(const AutoRef<U> &that) const noexcept { return (*obj)op(*that.obj); }        \
+  template <typename U> bool operator op(const U *that) const noexcept { return (*obj)op(*that); }                     \
+  template <typename U> friend bool operator op(const U *that, const AutoRef<T> &ref) { return (*that)op(*ref.obj); }
+  OP(<)
+  OP(>)
+  OP(<=)
+  OP(>=)
+#undef OP
+
   std::size_t getRef() const noexcept { return meta ? meta->getRef() : 0; }
   std::size_t getWeak() const noexcept { return meta ? meta->getWeak() - 1 : 0; }
 
   template <typename... Args> static AutoRef make(Args &&...args) {
+    T *obj = new T(std::forward<Args>(args)...);
+#ifndef NO_GC
+    GC::gc().track(obj);
+#endif
+    return AutoRef(obj);
+  }
+
+  template <typename... Args> static AutoRef makeNoGC(Args &&...args) {
     return AutoRef(new T(std::forward<Args>(args)...));
   }
 };
+
+template <typename> struct isAutoRef : std::false_type {};
+template <typename T> struct isAutoRef<AutoRef<T>> : std::true_type {};
+template <typename T> constexpr bool isAutoRef_v = isAutoRef<T>::value;
