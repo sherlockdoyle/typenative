@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <initializer_list>
 #include <iterator>
 #include <sstream>
 #include <string>
@@ -376,3 +377,5 @@ public:
     return oss.str();
   }
 };
+
+template <typename T> $Array<T> newArray(std::initializer_list<T> list) { return $Array<T>::make(list); }
