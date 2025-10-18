@@ -2,7 +2,7 @@
 
 #include "../rt/AutoRef.hpp"
 #include "../rt/Object.hpp"
-#include "../util.hpp"
+#include "toString.hpp"
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
@@ -65,6 +65,10 @@ public:
     return data[data.size() + i];
   }
 
+  std::size_t push(const T &t) noexcept {
+    data.push_back(t);
+    return data.size();
+  }
   std::size_t push(const $Array<T> &arr) noexcept {
     data.insert(data.end(), arr->data.begin(), arr->data.end());
     return data.size();

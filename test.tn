@@ -1,5 +1,75 @@
-function main(): i32 {
-  print(123);
+function precedence(op: String): i8 {
+  if (op === "+" || op === "-")
+    return 1;
+  if (op === "*" || op === "/")
+    return 2;
+  return 0;
+}
 
+function applyOp(a: f64, b: f64, op: String): f64 {
+  if (op === "+")
+    return a + b;
+  if (op === "-")
+    return a - b;
+  if (op === "*")
+    return a * b;
+  if (op === "/")
+    return a / b;
+  return 0;
+}
+
+function evaluate(expr: String): f64 {
+  let values: f64[] = [];
+  let ops: String[] = [];
+  let i: i32 = 0;
+  let length: i32 = expr.length();
+
+  while (i < length) {
+    if (expr[i] === " ") {
+      i++;
+      continue;
+    }
+
+    if (expr[i].isInt() || expr[i] === ".") {
+      let val: f64 = 0;
+      let fraction: f64 = 0.1;
+      let decimalFound: boolean = false;
+
+      while (i < length && (expr[i].isInt() || expr[i] === ".")) {
+        if (expr[i] === ".") {
+          decimalFound = true;
+        } else if (!decimalFound)
+          val = val * 10 + parseInt(expr[i]);
+        else {
+          val = val + parseInt(expr[i]) * fraction;
+          fraction = fraction / 10;
+        }
+        i++;
+      }
+      values.push(val);
+      continue;
+    } else {
+      while (ops.length() > 0 && precedence(ops[-1]) >= precedence(expr[i])) {
+        let val2: f64 = values.pop();
+        let val1: f64 = values.pop();
+        let op: String = ops.pop();
+        values.push(applyOp(val1, val2, op));
+      }
+      ops.push(expr[i]);
+    }
+    i++;
+  }
+
+  while (ops.length() > 0) {
+    let val2: f64 = values.pop();
+    let val1: f64 = values.pop();
+    let op: String = ops.pop();
+    values.push(applyOp(val1, val2, op));
+  }
+  return values.pop();
+}
+
+function main(): i32 {
+  print(evaluate("1 + 2 * 3 - 4 / 5"));
   return 0;
 }

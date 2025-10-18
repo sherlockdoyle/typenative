@@ -200,7 +200,7 @@ class String(Node):
   value: str
 
   def codegen(self):
-    return '"' + self.value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    return 'newString("' + self.value.replace('\\', '\\\\').replace('"', '\\"') + '")'
 
   def to_string(self):
     return repr(self.value)
@@ -242,7 +242,9 @@ class ArrayLiteral(Node):
   elements: list[Node]
 
   def codegen(self):
-    return 'newArray(std::initializer_list({' + ', '.join([e.codegen() for e in self.elements]) + '}))'
+    if self.elements:
+      return 'newArray(std::initializer_list({' + ', '.join([e.codegen() for e in self.elements]) + '}))'
+    return self._type.codegen() + '::make()'
 
   def to_string(self):
     return f'[{", ".join([e.to_string() for e in self.elements])}]'
@@ -292,6 +294,10 @@ class BinOp(Node):
   def codegen(self):
     if self.op == '**':
       return f'std::pow({self.left.codegen()}, {self.right.codegen()})'
+    if self.op == '===':
+      return f'(*({self.left.codegen()}) == ({self.right.codegen()}))'
+    if self.op == '!==':
+      return f'(*({self.left.codegen()}) != ({self.right.codegen()}))'
     return f'({self.left.codegen()} {self.op} {self.right.codegen()})'
 
   def to_string(self):
