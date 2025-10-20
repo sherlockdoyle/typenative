@@ -1,0 +1,66 @@
+let TOKEN_LET: i32 = 0;
+let TOKEN_IF: i32 = 1;
+let TOKEN_ELSE: i32 = 2;
+let TOKEN_WHILE: i32 = 3;
+let TOKEN_FUNCTION: i32 = 4;
+let TOKEN_INTERFACE: i32 = 5;
+let TOKEN_RETURN: i32 = 6;
+let TOKEN_AS: i32 = 7;
+let TOKEN_EXTENDS: i32 = 8;
+let TOKEN_TRUE: i32 = 9;
+let TOKEN_FALSE: i32 = 10;
+let TOKEN_NULL: i32 = 11;
+let TOKEN_PLUS: i32 = 12;
+let TOKEN_MINUS: i32 = 13;
+let TOKEN_STAR: i32 = 14;
+let TOKEN_SLASH: i32 = 15;
+let TOKEN_PERCENT: i32 = 16;
+let TOKEN_POWER: i32 = 17;
+let TOKEN_EQ: i32 = 18;
+let TOKEN_NE: i32 = 19;
+let TOKEN_SEQ: i32 = 20;
+let TOKEN_SNE: i32 = 21;
+let TOKEN_LT: i32 = 22;
+let TOKEN_GT: i32 = 23;
+let TOKEN_LE: i32 = 24;
+let TOKEN_GE: i32 = 25;
+let TOKEN_ASSIGN: i32 = 26;
+let TOKEN_AND: i32 = 27;
+let TOKEN_OR: i32 = 28;
+let TOKEN_NOT: i32 = 29;
+let TOKEN_BIT_AND: i32 = 30;
+let TOKEN_BIT_OR: i32 = 31;
+let TOKEN_BIT_XOR: i32 = 32;
+let TOKEN_BIT_NOT: i32 = 33;
+let TOKEN_LSHIFT: i32 = 34;
+let TOKEN_RSHIFT: i32 = 35;
+let TOKEN_INC: i32 = 36;
+let TOKEN_DEC: i32 = 37;
+let TOKEN_LPAREN: i32 = 38;
+let TOKEN_RPAREN: i32 = 39;
+let TOKEN_LBRACE: i32 = 40;
+let TOKEN_RBRACE: i32 = 41;
+let TOKEN_LBRACKET: i32 = 42;
+let TOKEN_RBRACKET: i32 = 43;
+let TOKEN_COMMA: i32 = 44;
+let TOKEN_COLON: i32 = 45;
+let TOKEN_SEMICOLON: i32 = 46;
+let TOKEN_DOT: i32 = 47;
+let TOKEN_NUMBER: i32 = 48;
+let TOKEN_STRING: i32 = 49;
+let TOKEN_IDENTIFIER: i32 = 50;
+let TOKEN_EOF: i32 = 51;
+let TOKEN_IMPORT: i32 = 52;
+let TOKEN_FROM: i32 = 53;
+let TOKEN_EXPORT: i32 = 54;
+
+interface Token {
+  type: i32;
+  value: String;
+  line: i32;
+  column: i32;
+}
+function Token_new(type: i32, value: String, line: i32, column: i32): Token {
+  let token: Token = { type: type, value: value, line: line, column: column };
+  return token;
+}
