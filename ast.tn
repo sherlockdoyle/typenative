@@ -1,0 +1,314 @@
+let AST_Type: i32 = 0;
+let AST_NumberLiteral: i32 = 1;
+let AST_StringLiteral: i32 = 2;
+let AST_BoolLiteral: i32 = 3;
+let AST_NullLiteral: i32 = 4;
+let AST_Variable: i32 = 5;
+let AST_BinaryOp: i32 = 6;
+let AST_UnaryOp: i32 = 7;
+let AST_Assignment: i32 = 8;
+let AST_ArrayAccess: i32 = 9;
+let AST_FieldAccess: i32 = 10;
+let AST_FunctionCall: i32 = 11;
+let AST_TypeCast: i32 = 12;
+let AST_ArrayLiteral: i32 = 13;
+let AST_ObjectLiteral: i32 = 14;
+let AST_NameType: i32 = 15;
+let AST_VarDecl: i32 = 16;
+let AST_ExprStmt: i32 = 17;
+let AST_Block: i32 = 18;
+let AST_IfStmt: i32 = 19;
+let AST_WhileStmt: i32 = 20;
+let AST_ReturnStmt: i32 = 21;
+let AST_FunctionDecl: i32 = 22;
+let AST_InterfaceDecl: i32 = 23;
+let AST_Program: i32 = 24;
+let AST_KeyVal: i32 = 25;
+let AST_Import: i32 = 26;
+let AST_Export: i32 = 27;
+
+interface ASTNode {
+  type: i32;
+  name: String;
+  arrayDepth: i32;
+  valueNum: f64;
+  valueStr: String;
+  valueBool: boolean;
+  op: String;
+  cond: ASTNode;
+  left: ASTNode;
+  right: ASTNode;
+  args: ASTNode[];
+  imports: String[];
+  injectedName: String;
+  injectedType: ASTNode;
+}
+
+function Type_new(n: String, depth: i32): ASTNode {
+  let type: ASTNode = { type: AST_Type, name: n, arrayDepth: depth };
+  return type;
+}
+function NumberLiteral_new(value: f64): ASTNode {
+  let num: ASTNode = { type: AST_NumberLiteral, valueNum: value };
+  return num;
+}
+function StringLiteral_new(value: String): ASTNode {
+  let str: ASTNode = { type: AST_StringLiteral, valueStr: value };
+  return str;
+}
+function BoolLiteral_new(value: boolean): ASTNode {
+  let boolLit: ASTNode = { type: AST_BoolLiteral, valueBool: value };
+  return boolLit;
+}
+function NullLiteral_new(): ASTNode {
+  let nullLit: ASTNode = { type: AST_NullLiteral };
+  return nullLit;
+}
+function Variable_new(name: String): ASTNode {
+  let variable: ASTNode = { type: AST_Variable, name: name };
+  return variable;
+}
+function BinaryOp_new(op: String, left: ASTNode, right: ASTNode): ASTNode {
+  let binaryOp: ASTNode = { type: AST_BinaryOp, op: op, left: left, right: right };
+  return binaryOp;
+}
+function UnaryOp_new(op: String, operand: ASTNode, prefix: boolean): ASTNode {
+  if (prefix) {
+    let unaryOp: ASTNode = { type: AST_UnaryOp, op: op, right: operand };
+    return unaryOp;
+  } else {
+    let unaryOp: ASTNode = { type: AST_UnaryOp, op: op, left: operand };
+    return unaryOp;
+  }
+}
+function Assignment_new(l: ASTNode, r: ASTNode): ASTNode {
+  let assignment: ASTNode = { type: AST_Assignment, left: l, right: r };
+  return assignment;
+}
+function ArrayAccess_new(a: ASTNode, i: ASTNode): ASTNode {
+  let arrayAccess: ASTNode = { type: AST_ArrayAccess, left: a, right: i };
+  return arrayAccess;
+}
+function FieldAccess_new(o: ASTNode, f: String): ASTNode {
+  let fieldAccess: ASTNode = { type: AST_FieldAccess, left: o, name: f };
+  return fieldAccess;
+}
+function FunctionCall_new(f: ASTNode, args: ASTNode[]): ASTNode {
+  let functionCall: ASTNode = { type: AST_FunctionCall, left: f, args: args };
+  return functionCall;
+}
+function TypeCast_new(e: ASTNode, t: ASTNode): ASTNode {
+  let typeCast: ASTNode = { type: AST_TypeCast, left: e, right: t };
+  return typeCast;
+}
+function ArrayLiteral_new(elements: ASTNode[]): ASTNode {
+  let arrayLiteral: ASTNode = { type: AST_ArrayLiteral, args: elements };
+  return arrayLiteral;
+}
+function ObjectLiteral_new(properties: ASTNode[]): ASTNode {
+  let objectLiteral: ASTNode = { type: AST_ObjectLiteral, args: properties };
+  return objectLiteral;
+}
+function NameType_new(n: String, t: ASTNode): ASTNode {
+  let nameType: ASTNode = { type: AST_NameType, name: n, right: t };
+  return nameType;
+}
+function KeyVal_new(k: String, v: ASTNode): ASTNode {
+  let keyVal: ASTNode = { type: AST_KeyVal, name: k, right: v };
+  return keyVal;
+}
+function VarDecl_new(n: String, t: ASTNode, i: ASTNode): ASTNode {
+  let varDecl: ASTNode = { type: AST_VarDecl, name: n, left: t, right: i };
+  return varDecl;
+}
+function ExprStmt_new(e: ASTNode): ASTNode {
+  let exprStmt: ASTNode = { type: AST_ExprStmt, left: e };
+  return exprStmt;
+}
+function Block_new(stmts: ASTNode[]): ASTNode {
+  let block: ASTNode = { type: AST_Block, args: stmts };
+  return block;
+}
+function IfStmt_new(c: ASTNode, t: ASTNode, e: ASTNode): ASTNode {
+  let ifStmt: ASTNode = { type: AST_IfStmt, cond: c, left: t, right: e };
+  return ifStmt;
+}
+function WhileStmt_new(c: ASTNode, b: ASTNode): ASTNode {
+  let whileStmt: ASTNode = { type: AST_WhileStmt, cond: c, left: b };
+  return whileStmt;
+}
+function ReturnStmt_new(v: ASTNode): ASTNode {
+  let returnStmt: ASTNode = { type: AST_ReturnStmt, left: v };
+  return returnStmt;
+}
+function FunctionDecl_new(n: String, p: ASTNode[], rt: ASTNode, b: ASTNode): ASTNode {
+  let functionDecl: ASTNode = { type: AST_FunctionDecl, name: n, args: p, left: rt, right: b };
+  return functionDecl;
+}
+function InterfaceDecl_new(n: String, m: ASTNode[]): ASTNode {
+  let interfaceDecl: ASTNode = { type: AST_InterfaceDecl, name: n, args: m };
+  return interfaceDecl;
+}
+function Program_new(stmts: ASTNode[]): ASTNode {
+  let program: ASTNode = { type: AST_Program, args: stmts };
+  return program;
+}
+function Import_new(m: String, s: String[]): ASTNode {
+  let imprt: ASTNode = { type: AST_Import, imports: s, name: m };
+  return imprt;
+}
+function Export_new(s: ASTNode): ASTNode {
+  let exportStmt: ASTNode = { type: AST_Export, right: s };
+  return exportStmt;
+}
+
+function ASTNode_toString(node: ASTNode): String {
+  if (node.type == AST_Type) {
+    let result: String = node.name;
+    let i: i32 = 0;
+    while (i < node.arrayDepth) {
+      result = result.add("[]");
+      ++i;
+    }
+    return result;
+  }
+  if (node.type == AST_NumberLiteral) {
+    if (node.valueNum == int(node.valueNum)) return StringFrom(int(node.valueNum));
+    return StringFrom(node.valueNum);
+  }
+  if (node.type == AST_StringLiteral) {
+    return node.valueStr;
+  }
+  if (node.type == AST_BoolLiteral) {
+    if (node.valueBool) return "true";
+    return "false";
+  }
+  if (node.type == AST_NullLiteral) {
+    return "null";
+  }
+  if (node.type == AST_Variable) {
+    return node.name;
+  }
+  if (node.type == AST_BinaryOp) {
+    return "(".add(ASTNode_toString(node.left)).add(" ").add(node.op).add(" ").add(ASTNode_toString(node.right)).add(")");
+  }
+  if (node.type == AST_UnaryOp) {
+    if (node.right) return "(".add(node.op).add(ASTNode_toString(node.right)).add(")");
+    return "(".add(ASTNode_toString(node.left)).add(node.op).add(")");
+  }
+  if (node.type == AST_Assignment) {
+    return ASTNode_toString(node.left).add(" = ").add(ASTNode_toString(node.right));
+  }
+  if (node.type == AST_ArrayAccess) {
+    return ASTNode_toString(node.left).add("[").add(ASTNode_toString(node.right)).add("]");
+  }
+  if (node.type == AST_FieldAccess) {
+    return ASTNode_toString(node.left).add(".").add(node.name);
+  }
+  if (node.type == AST_FunctionCall) {
+    let result: String = ASTNode_toString(node.left).add("(");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(ASTNode_toString(node.args[i]));
+      ++i;
+    }
+    return result.add(")");
+  }
+  if (node.type == AST_TypeCast) {
+    return "(".add(ASTNode_toString(node.left)).add(" as ").add(ASTNode_toString(node.right)).add(")");
+  }
+  if (node.type == AST_ArrayLiteral) {
+    let result: String = "[";
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(ASTNode_toString(node.args[i]));
+      ++i;
+    }
+    return result.add("]");
+  }
+  if (node.type == AST_ObjectLiteral) {
+    let result: String = "{";
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(ASTNode_toString(node.args[i]));
+      ++i;
+    }
+    return result.add("}");
+  }
+  if (node.type == AST_NameType || node.type == AST_KeyVal) {
+    return node.name.add(": ").add(ASTNode_toString(node.right));
+  }
+  if (node.type == AST_VarDecl) {
+    return "let ".add(node.name).add(": ").add(ASTNode_toString(node.left)).add(" = ").add(ASTNode_toString(node.right)).add(";");
+  }
+  if (node.type == AST_ExprStmt) {
+    return ASTNode_toString(node.left).add(";");
+  }
+  if (node.type == AST_Block) {
+    let result: String = "{\n";
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      result = result.add("  ").add(ASTNode_toString(node.args[i])).add("\n");
+      ++i;
+    }
+    return result.add("}");
+  }
+  if (node.type == AST_IfStmt) {
+    let result: String = "if (".add(ASTNode_toString(node.cond)).add(")").add(ASTNode_toString(node.left));
+    if (node.right) result = result.add(" else ").add(ASTNode_toString(node.right));
+    return result;
+  }
+  if (node.type == AST_WhileStmt) {
+    return "while (".add(ASTNode_toString(node.cond)).add(")").add(ASTNode_toString(node.left));
+  }
+  if (node.type == AST_ReturnStmt) {
+    return "return ".add(ASTNode_toString(node.left)).add(";");
+  }
+  if (node.type == AST_FunctionDecl) {
+    let result: String = "function ".add(node.name).add("(");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(ASTNode_toString(node.args[i]));
+      ++i;
+    }
+    result = result.add("): ").add(ASTNode_toString(node.left)).add(" ").add(ASTNode_toString(node.right));
+    return result;
+  }
+  if (node.type == AST_InterfaceDecl) {
+    let result: String = "interface ".add(node.name).add(" {\n");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      result = result.add("  ").add(ASTNode_toString(node.args[i])).add(";\n");
+      ++i;
+    }
+    return result.add("}");
+  }
+  if (node.type == AST_Program) {
+    let result: String = "";
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      result = result.add(ASTNode_toString(node.args[i])).add("\n");
+      ++i;
+    }
+    return result;
+  }
+  if (node.type == AST_Import) {
+    let result: String = "import {";
+    let i: i32 = 0;
+    while (i < node.imports.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(node.imports[i]);
+      ++i;
+    }
+    return result.add("} from ").add(node.name).add(";");
+  }
+  if (node.type == AST_Export) {
+    return "export ".add(ASTNode_toString(node.right));
+  }
+
+  return "UNKNOWN!!!";
+}

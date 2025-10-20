@@ -1,0 +1,272 @@
+import { } from "ast";
+import { } from "parser";
+
+function Type_isValType(name: String): boolean {
+  return name === "i8" || name === "i16" || name === "i32" || name === "i64" || name === "i128" || name === "u8" || name === "u16" || name === "u32" || name === "u64" || name === "u128" || name === "f32" || name === "f64" || name === "f128" || name === "void";
+}
+
+function InterfaceDecl_declgen(node: ASTNode): String {
+  return "struct ".add(node.name).add(";");
+}
+function FunctionDecl_declgen(node: ASTNode): String {
+  let result: String = ASTNode_codegen(node.left).add(" ").add(node.name).add("(");
+  let i: i32 = 0;
+  while (i < node.args.length()) {
+    if (i > 0) result = result.add(", ");
+    result = result.add(ASTNode_codegen(node.args[i]));
+    ++i;
+  }
+  return result.add(");");
+}
+
+function ASTNode_codegen(node: ASTNode): String {
+  if (node.type == AST_Type) {
+    if (node.name === "boolean") return "bool";
+
+    let name: String = null;
+    if (Type_isValType(node.name)) name = node.name;
+    else name = "AutoRef<".add(node.name).add(">");
+
+    if (node.arrayDepth > 0) {
+      let i: i32 = 0;
+      while (i < node.arrayDepth) {
+        name = "AutoRef<Array<".add(name).add(">>");
+        ++i;
+      }
+    }
+    return name;
+  }
+  if (node.type == AST_NumberLiteral) {
+    if (node.valueNum == int(node.valueNum)) return StringFrom(int(node.valueNum));
+    return StringFrom(node.valueNum).add("f");
+  }
+  if (node.type == AST_StringLiteral) {
+    return "newString(".add(node.valueStr).add(")");
+  }
+  if (node.type == AST_BoolLiteral) {
+    if (node.valueBool) return "true";
+    return "false";
+  }
+  if (node.type == AST_NullLiteral) {
+    return "nullptr";
+  }
+  if (node.type == AST_Variable) {
+    return node.name;
+  }
+  if (node.type == AST_BinaryOp) {
+    if (node.op === "**")
+      return "std::pow(".add(ASTNode_codegen(node.left)).add(", ").add(ASTNode_codegen(node.right)).add(")");
+    if (node.op === "===")
+      return "(*(".add(ASTNode_codegen(node.left)).add(") == (").add(ASTNode_codegen(node.right)).add("))");
+    if (node.op === "!==")
+      return "(*(".add(ASTNode_codegen(node.left)).add(") != (").add(ASTNode_codegen(node.right)).add("))");
+    return "(".add(ASTNode_codegen(node.left)).add(" ").add(node.op).add(" ").add(ASTNode_codegen(node.right)).add(")");
+  }
+  if (node.type == AST_UnaryOp) {
+    if (node.right) return "(".add(node.op).add(ASTNode_codegen(node.right)).add(")");
+    return "(".add(ASTNode_codegen(node.left)).add(node.op).add(")");
+  }
+  if (node.type == AST_Assignment) {
+    return ASTNode_codegen(node.left).add(" = ").add(ASTNode_codegen(node.right));
+  }
+  if (node.type == AST_ArrayAccess) {
+    return ASTNode_codegen(node.left).add("->at(").add(ASTNode_codegen(node.right)).add(")");
+  }
+  if (node.type == AST_FieldAccess) {
+    return ASTNode_codegen(node.left).add("->").add(node.name);
+  }
+  if (node.type == AST_FunctionCall) {
+    let result: String = ASTNode_codegen(node.left).add("(");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(ASTNode_codegen(node.args[i]));
+      ++i;
+    }
+    return result.add(")");
+  }
+  if (node.type == AST_TypeCast) {
+    return "(".add(ASTNode_codegen(node.left)).add(".as<").add(ASTNode_codegen(node.right)).add(">())");
+  }
+  if (node.type == AST_ArrayLiteral) {
+    if (node.args.length() > 0) {
+      let result: String = "newArray(std::initializer_list(";
+      let i: i32 = 0;
+      while (i < node.args.length()) {
+        if (i > 0) result = result.add(", ");
+        result = result.add(ASTNode_codegen(node.args[i]));
+        ++i;
+      }
+      return result.add("))");
+    }
+    return ASTNode_codegen(node.injectedType).add("::make()");
+  }
+  if (node.type == AST_ObjectLiteral) {
+    let result: String = ASTNode_codegen(node.injectedType).add("::make(); ");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add("; ");
+      node.args[i].injectedName = node.injectedName;
+      result = result.add(ASTNode_codegen(node.args[i]));
+      ++i;
+    }
+    return result;
+  }
+  if (node.type == AST_NameType) {
+    return ASTNode_codegen(node.right).add(" ").add(node.name);
+  }
+  if (node.type == AST_KeyVal) {
+    return node.injectedName.add("->").add(node.name).add(" = ").add(ASTNode_codegen(node.right));
+  }
+  if (node.type == AST_VarDecl) {
+    node.right.injectedName = node.name;
+    node.right.injectedType = node.left;
+
+    return ASTNode_codegen(node.left).add(" ").add(node.name).add(" = ").add(ASTNode_codegen(node.right)).add(";");
+  }
+  if (node.type == AST_ExprStmt) {
+    return ASTNode_codegen(node.left).add(";");
+  }
+  if (node.type == AST_Block) {
+    let result: String = "{\n";
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      result = result.add("  ").add(ASTNode_codegen(node.args[i])).add("\n");
+      ++i;
+    }
+    return result.add("}");
+  }
+  if (node.type == AST_IfStmt) {
+    let result: String = "if (".add(ASTNode_codegen(node.cond)).add(")").add(ASTNode_codegen(node.left));
+    if (node.right) result = result.add(" else ").add(ASTNode_codegen(node.right));
+    return result;
+  }
+  if (node.type == AST_WhileStmt) {
+    return "while (".add(ASTNode_codegen(node.cond)).add(")").add(ASTNode_codegen(node.left));
+  }
+  if (node.type == AST_ReturnStmt) {
+    return "return ".add(ASTNode_codegen(node.left)).add(";");
+  }
+  if (node.type == AST_FunctionDecl) {
+    let result: String = ASTNode_codegen(node.left).add(" ").add(node.name).add("(");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(ASTNode_codegen(node.args[i]));
+      ++i;
+    }
+    return result.add(") ").add(ASTNode_codegen(node.right));
+  }
+  if (node.type == AST_InterfaceDecl) {
+    let result: String = "struct ".add(node.name).add(" : virtual public Object {\n");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      result = result.add("  ").add(ASTNode_codegen(node.args[i])).add(";\n");
+      ++i;
+    }
+    return result.add("};");
+  }
+  if (node.type == AST_Program) {
+    let result: String = "#include \"src/core/core.hpp\"\n#include <cmath>\n#include <initializer_list>\n\n";
+
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (node.args[i].type == AST_Import)
+        result = result.add(ASTNode_codegen(node.args[i])).add("\n");
+      ++i;
+    }
+
+    result = result.add("\n");
+    i = 0;
+    while (i < node.args.length()) {
+      if (node.args[i].type == AST_InterfaceDecl)
+        result = result.add(InterfaceDecl_declgen(node.args[i])).add("\n");
+      ++i;
+    }
+
+    result = result.add("\n");
+    i = 0;
+    while (i < node.args.length()) {
+      if (node.args[i].type == AST_FunctionDecl) {
+        if (node.args[i].name === "main")
+          node.args[i].name = "$main";
+        result = result.add(FunctionDecl_declgen(node.args[i])).add("\n");
+      }
+      if (node.args[i].type == AST_Export && node.args[i].right.type == AST_FunctionDecl)
+        result = result.add(FunctionDecl_declgen(node.args[i].right)).add("\n");
+      ++i;
+    }
+
+    result = result.add("\n");
+    i = 0;
+    while (i < node.args.length()) {
+      if (node.args[i].type != AST_Import)
+        result = result.add(ASTNode_codegen(node.args[i])).add("\n");
+      ++i;
+    }
+
+    return result;
+  }
+  if (node.type == AST_Import) {
+    let name: String = node.name.substring(1, node.name.length() - 1);
+    transpile(name.add(".tn"), ".hpp");
+    return "#include \"".add(name).add(".hpp\"");
+  }
+  if (node.type == AST_Export) {
+    return ASTNode_codegen(node.right);
+  }
+
+  return "UNKNOWN!!!";
+}
+
+let transpiledFiles: String[] = [];
+function transpile(path: String, ext: String): String {
+  let needTranspilation: boolean = true;
+  let i: i32 = 0;
+  while (i < transpiledFiles.length()) {
+    if (transpiledFiles[i] === path) {
+      needTranspilation = false;
+      break;
+    }
+    i++;
+  }
+
+  if (needTranspilation) {
+    let code: File = open(path, "r");
+    let lexer: Lexer = Lexer_new(code.read());
+    let parser: Parser = Parser_new(lexer);
+    let program: ASTNode = Parser_parse(parser);
+
+    let transpiledPath: String = "build/".add(path.split(".")[0]).add(ext);
+    let transpiledFile: File = open(transpiledPath, "w");
+
+    if (ext === ".hpp") transpiledFile.write("#pragma once\n");
+    transpiledFile.write(ASTNode_codegen(program));
+    if (ext === ".cpp")
+      transpiledFile.write("\nint main(int argc, char* argv[]) {\n  AutoRef<Array<AutoRef<String>>> args = AutoRef<Array<AutoRef<String>>>::make();\n  for (int i = 0; i < argc; ++i)\n    args->push(AutoRef<String>::make(argv[i]));\n  return $main(args);\n}");
+
+    transpiledFiles.push(path);
+    return transpiledPath;
+  }
+
+  return "";
+}
+
+
+function main(args: String[]): i32 {
+  if (args.length() < 3 || args[1] !== "compile") {
+    print("Usage: ".add(args[0]).add(" compile <input>"));
+    return 1;
+  }
+  let path: String = args[2];
+
+  system("mkdir -p build");
+  system("cp -R src build/");
+  let transpiledPath: String = transpile(path, ".cpp");
+
+  let binPath: String = "dist/".add(path.split(".")[0]);
+  system("mkdir -p dist");
+  system("clang++-20 ".add(transpiledPath).add(" -std=c++20 -Wall -o ").add(binPath));
+
+  return 0;
+}
