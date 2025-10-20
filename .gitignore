@@ -40,7 +40,7 @@
 # debug information files
 *.dwo
 
-.venv/**
-build/**
-dist/**
+.venv/
+build/
+dist/
 __pycache__

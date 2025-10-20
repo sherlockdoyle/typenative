@@ -41,7 +41,7 @@ class TSTransformer(Transformer):
     return Number(float(n))
 
   def STRING(self, s):
-    return String(ast.literal_eval(s))
+    return String(s)
 
   def true_lit(self):
     return Boolean(True)

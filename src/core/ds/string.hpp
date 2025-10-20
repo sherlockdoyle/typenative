@@ -34,6 +34,8 @@ public:
     return out;
   }
 
+  $String add(const $String &that) const noexcept { return $String::make(str + that->str); }
+
   bool isInt() const noexcept {
     try {
       std::stoi(str);
@@ -50,6 +52,18 @@ public:
       return false;
     }
   }
+  bool isAlpha() const noexcept {
+    for (char c : str)
+      if (!std::isalpha(c))
+        return false;
+    return true;
+  }
+  bool isAlNum() const noexcept {
+    for (char c : str)
+      if (!std::isalnum(c))
+        return false;
+    return true;
+  }
 
   bool operator==(const $String &that) const noexcept { return str == that->str; }
   bool operator!=(const $String &that) const noexcept { return str != that->str; }
@@ -59,6 +73,7 @@ public:
 };
 
 inline $String newString(std::string str) { return $String::make(str); }
+template <typename T> $String StringFrom(T t) { return $String::make(std::to_string(t)); }
 
 inline i64 parseInt(const $String &str) { return std::stoi(str->_str()); }
 inline f64 parseFloat(const $String &str) { return std::stod(str->_str()); }

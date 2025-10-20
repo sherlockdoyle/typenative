@@ -69,7 +69,7 @@ function evaluate(expr: String): f64 {
   return values.pop();
 }
 
-function main(): i32 {
+function main(args: String[]): i32 {
   print(evaluate("1 + 2 * 3 - 4 / 5"));
   return 0;
 }
