@@ -1,0 +1,7 @@
+export function precedence(op: String): i8 {
+  if (op === "+" || op === "-")
+    return 1;
+  if (op === "*" || op === "/")
+    return 2;
+  return 0;
+}

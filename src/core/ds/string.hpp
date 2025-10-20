@@ -4,6 +4,7 @@
 #include "../rt/Object.hpp"
 #include "array.hpp"
 #include "valTypes.hpp"
+#include <algorithm>
 #include <cstddef>
 #include <string>
 
@@ -32,6 +33,11 @@ public:
     out->push($String::make(str.substr(start)));
 
     return out;
+  }
+
+  $String substring(const std::size_t start, const std::size_t end) const noexcept {
+    std::size_t i = std::max(0ul, start), j = std::min(end, str.length());
+    return $String::make(str.substr(i, j - i));
   }
 
   $String add(const $String &that) const noexcept { return $String::make(str + that->str); }
