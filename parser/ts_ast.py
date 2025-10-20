@@ -15,10 +15,19 @@ class Program(Node):
   statements: list[Node]
 
   def codegen(self):
+    for s in self.statements:
+      if isinstance(s, FunctionDecl) and s.name == 'main':
+        s.name = '$main'
+
     return (
       '\n'.join(['#include "src/core/core.hpp"', '#include <cmath>', '#include <initializer_list>'])
       + '\n\n'
+      + '\n'.join([s.declgen() for s in self.statements if isinstance(s, InterfaceDecl)])
+      + '\n\n'
+      + '\n'.join([s.declgen() for s in self.statements if isinstance(s, FunctionDecl)])
+      + '\n\n'
       + '\n'.join([s.codegen() for s in self.statements])
+      + '\nint main(int argc, char* argv[]) {\n  AutoRef<Array<AutoRef<String>>> args = AutoRef<Array<AutoRef<String>>>::make();\n  for (int i = 0; i < argc; ++i)\n    args->push(AutoRef<String>::make(argv[i]));\n  return $main(args);\n}'
     )
 
   def to_string(self):
@@ -122,6 +131,9 @@ class FunctionDecl(Node):
   return_type: Type
   body: Block
 
+  def declgen(self):
+    return f'{self.return_type.codegen()} {self.name}({", ".join([p.codegen() for p in self.parameters])});'
+
   def codegen(self):
     return f'{self.return_type.codegen()} {self.name}({", ".join([p.codegen() for p in self.parameters])})\n{self.body.codegen()}'
 
@@ -169,6 +181,9 @@ class InterfaceDecl(Node):
   extends: str | None
   members: list[InterfaceMember]
 
+  def declgen(self):
+    return f'struct {self.name};'
+
   def codegen(self):
     return (
       f'struct {self.name} : virtual public {self.extends or "Object"} {{\n'
@@ -200,10 +215,10 @@ class String(Node):
   value: str
 
   def codegen(self):
-    return 'newString("' + self.value.replace('\\', '\\\\').replace('"', '\\"') + '")'
+    return 'newString(' + self.value + ')'
 
   def to_string(self):
-    return repr(self.value)
+    return self.value
 
 
 @dataclass
