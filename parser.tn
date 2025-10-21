@@ -416,6 +416,10 @@ function Parser_parseUnary(parser: Parser): ASTNode {
     let operand: ASTNode = Parser_parseUnary(parser);
     return UnaryOp_new("-", operand, true);
   }
+  if (Parser_match(parser, TOKEN_NEW)) {
+    let operand: ASTNode = Parser_parseUnary(parser);
+    return UnaryOp_new("new", operand, true);
+  }
   return Parser_parseCast(parser);
 }
 

@@ -63,6 +63,16 @@ function ASTNode_codegen(node: ASTNode): String {
     return "(".add(ASTNode_codegen(node.left)).add(" ").add(node.op).add(" ").add(ASTNode_codegen(node.right)).add(")");
   }
   if (node.type == AST_UnaryOp) {
+    if (node.op === "new") {
+      let result: String = "AutoRef<".add(ASTNode_codegen(node.right.left)).add(">::make(");
+      let i: i32 = 0;
+      while (i < node.right.args.length()) {
+        if (i > 0) result = result.add(", ");
+        result = result.add(ASTNode_codegen(node.right.args[i]));
+        ++i;
+      }
+      return result.add(")");
+    }
     if (node.right) return "(".add(node.op).add(ASTNode_codegen(node.right)).add(")");
     return "(".add(ASTNode_codegen(node.left)).add(node.op).add(")");
   }
