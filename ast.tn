@@ -26,6 +26,8 @@ let AST_Program: i32 = 24;
 let AST_KeyVal: i32 = 25;
 let AST_Import: i32 = 26;
 let AST_Export: i32 = 27;
+let AST_ClassDecl: i32 = 28;
+let AST_MethodDecl: i32 = 29;
 
 interface ASTNode {
   type: i32;
@@ -39,6 +41,7 @@ interface ASTNode {
   left: ASTNode;
   right: ASTNode;
   args: ASTNode[];
+  methods: ASTNode[];
   imports: String[];
   injectedName: String;
   injectedType: ASTNode;
@@ -160,6 +163,14 @@ function Import_new(m: String, s: String[]): ASTNode {
 function Export_new(s: ASTNode): ASTNode {
   let exportStmt: ASTNode = { type: AST_Export, right: s };
   return exportStmt;
+}
+function ClassDecl_new(n: String, e: String, f: ASTNode[], m: ASTNode[]): ASTNode {
+  let classDecl: ASTNode = { type: AST_ClassDecl, name: n, valueStr: e, args: f, methods: m };
+  return classDecl;
+}
+function MethodDecl_new(n: String, p: ASTNode[], rt: ASTNode, b: ASTNode): ASTNode {
+  let methodDecl: ASTNode = { type: AST_MethodDecl, name: n, args: p, left: rt, right: b };
+  return methodDecl;
 }
 
 function ASTNode_toString(node: ASTNode): String {
@@ -308,6 +319,35 @@ function ASTNode_toString(node: ASTNode): String {
   }
   if (node.type == AST_Export) {
     return "export ".add(ASTNode_toString(node.right));
+  }
+  if (node.type == AST_ClassDecl) {
+    let result: String = "class ".add(node.name);
+    if (node.valueStr) result.add(" extends ").add(node.valueStr);
+    result = result.add(" {\n");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      result = result.add("  ").add(ASTNode_toString(node.args[i])).add(";\n");
+      ++i;
+    }
+    i = 0;
+    while (i < node.methods.length()) {
+      result = result.add("  ").add(ASTNode_toString(node.methods[i])).add("\n");
+      ++i;
+    }
+    return result.add("}");
+  }
+  if (node.type == AST_MethodDecl) {
+    let result: String = node.name.add("(");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(ASTNode_toString(node.args[i]));
+      ++i;
+    }
+    result = result.add(")");
+    if (node.left)
+      result = result.add(": ").add(ASTNode_toString(node.left));
+    return result.add(" ").add(ASTNode_toString(node.right));
   }
 
   return "UNKNOWN!!!";

@@ -53,7 +53,50 @@ function Parser_parseStatement(parser: Parser): ASTNode {
   if (Parser_check(parser, TOKEN_LBRACE)) return Parser_parseBlock(parser);
   if (Parser_check(parser, TOKEN_IMPORT)) return Parser_parseImport(parser);
   if (Parser_check(parser, TOKEN_EXPORT)) return Parser_parseExport(parser);
+  if (Parser_check(parser, TOKEN_CLASS)) return Parser_parseClassDecl(parser);
   return Parser_parseExprStmt(parser);
+}
+
+function Parser_parseClassDecl(parser: Parser): ASTNode {
+  Parser_expect(parser, TOKEN_CLASS, "Expected 'class' keyword");
+  let name: String = parser.current.value;
+  Parser_expect(parser, TOKEN_IDENTIFIER, "Expected class name");
+  let extend: String = null;
+  if (Parser_match(parser, TOKEN_EXTENDS)) {
+    extend = parser.current.value;
+    Parser_expect(parser, TOKEN_IDENTIFIER, "Expected class name");
+  }
+  Parser_expect(parser, TOKEN_LBRACE, "Expected '{' after class name");
+  let fields: ASTNode[] = [];
+  while (!Parser_check(parser, TOKEN_RBRACE) && !Parser_check(parser, TOKEN_EOF) && parser.current.value !== "constructor") {
+    fields.push(Parser_parseNameType(parser));
+    Parser_expect(parser, TOKEN_SEMICOLON, "Expected ';' after class member");
+  }
+  let methods: ASTNode[] = [];
+  while (!Parser_check(parser, TOKEN_RBRACE) && !Parser_check(parser, TOKEN_EOF)) {
+    methods.push(Parser_parseMethodDecl(parser));
+  }
+  Parser_expect(parser, TOKEN_RBRACE, "Expected '}' after class members");
+  return ClassDecl_new(name, extend, fields, methods);
+}
+
+function Parser_parseMethodDecl(parser: Parser): ASTNode {
+  let name: String = parser.current.value;
+  Parser_expect(parser, TOKEN_IDENTIFIER, "Expected method name");
+  Parser_expect(parser, TOKEN_LPAREN, "Expected '(' after method name");
+  let params: ASTNode[] = [];
+  if (!Parser_check(parser, TOKEN_RPAREN)) {
+    params.push(Parser_parseNameType(parser));
+    while (Parser_match(parser, TOKEN_COMMA)) params.push(Parser_parseNameType(parser));
+  }
+  Parser_expect(parser, TOKEN_RPAREN, "Expected ')' after method parameters");
+  let returnType: ASTNode = null;
+  if (name !== "constructor") {
+    Parser_expect(parser, TOKEN_COLON, "Expected ':' after method parameters");
+    returnType = Parser_parseType(parser);
+  }
+  let body: ASTNode = Parser_parseBlock(parser);
+  return MethodDecl_new(name, params, returnType, body);
 }
 
 function Parser_parseImport(parser: Parser): ASTNode {

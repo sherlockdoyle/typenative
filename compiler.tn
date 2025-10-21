@@ -86,7 +86,8 @@ function ASTNode_codegen(node: ASTNode): String {
     return result.add(")");
   }
   if (node.type == AST_TypeCast) {
-    return "(".add(ASTNode_codegen(node.left)).add(".as<").add(ASTNode_codegen(node.right)).add(">())");
+    let castedType: String = ASTNode_codegen(node.right);
+    return "(".add(ASTNode_codegen(node.left)).add(".as<").add(castedType.substring(8, castedType.length() - 1)).add(">())");
   }
   if (node.type == AST_ArrayLiteral) {
     if (node.args.length() > 0) {
@@ -179,7 +180,7 @@ function ASTNode_codegen(node: ASTNode): String {
     result = result.add("\n");
     i = 0;
     while (i < node.args.length()) {
-      if (node.args[i].type == AST_InterfaceDecl)
+      if (node.args[i].type == AST_InterfaceDecl || node.args[i].type == AST_ClassDecl)
         result = result.add(InterfaceDecl_declgen(node.args[i])).add("\n");
       ++i;
     }
@@ -214,6 +215,38 @@ function ASTNode_codegen(node: ASTNode): String {
   }
   if (node.type == AST_Export) {
     return ASTNode_codegen(node.right);
+  }
+  if (node.type == AST_ClassDecl) {
+    let result: String = "struct ".add(node.name).add(" : virtual public ");
+    if (node.valueStr) result = result.add(node.valueStr);
+    else result = result.add("Object");
+    result = result.add(" {\n");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      result = result.add("  ").add(ASTNode_codegen(node.args[i])).add(";\n");
+      ++i;
+    }
+    result = result.add(node.name).add("() = default;\nvirtual ~").add(node.name).add("() = default;\n");
+    i = 0;
+    while (i < node.methods.length()) {
+      node.methods[i].injectedName = node.name;
+      result = result.add("  ").add(ASTNode_codegen(node.methods[i])).add("\n");
+      ++i;
+    }
+    return result.add("};");
+  }
+  if (node.type == AST_MethodDecl) {
+    let result: String = "";
+    if (node.name === "constructor") result = node.injectedName;
+    else result = "virtual ".add(ASTNode_codegen(node.left)).add(" ").add(node.name);
+    result = result.add("(");
+    let i: i32 = 0;
+    while (i < node.args.length()) {
+      if (i > 0) result = result.add(", ");
+      result = result.add(ASTNode_codegen(node.args[i]));
+      ++i;
+    }
+    return result.add(") ").add(ASTNode_codegen(node.right));
   }
 
   return "UNKNOWN!!!";
