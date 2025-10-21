@@ -54,6 +54,7 @@ let TOKEN_IMPORT: i32 = 52;
 let TOKEN_FROM: i32 = 53;
 let TOKEN_EXPORT: i32 = 54;
 let TOKEN_CLASS: i32 = 55;
+let TOKEN_NEW: i32 = 56;
 
 interface Token {
   type: i32;

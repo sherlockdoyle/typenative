@@ -204,6 +204,7 @@ function ASTNode_toString(node: ASTNode): String {
     return "(".add(ASTNode_toString(node.left)).add(" ").add(node.op).add(" ").add(ASTNode_toString(node.right)).add(")");
   }
   if (node.type == AST_UnaryOp) {
+    if (node.op == "new") return "(new ".add(ASTNode_toString(node.right)).add(")");
     if (node.right) return "(".add(node.op).add(ASTNode_toString(node.right)).add(")");
     return "(".add(ASTNode_toString(node.left)).add(node.op).add(")");
   }

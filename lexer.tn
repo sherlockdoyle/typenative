@@ -79,6 +79,7 @@ function Lexer_readIdentifier(lexer: Lexer): Token {
   else if (id === "export") keyword = TOKEN_EXPORT;
   else if (id === "class") keyword = TOKEN_CLASS;
   else if (id === "extends") keyword = TOKEN_EXTENDS;
+  else if (id === "new") keyword = TOKEN_NEW;
   let token: Token = Token_new(keyword, id, lexer.line, startCol);
   return token;
 }
