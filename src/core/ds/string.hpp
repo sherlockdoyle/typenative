@@ -75,7 +75,7 @@ public:
   bool operator!=(const $String &that) const noexcept { return str != that->str; }
 
   std::string _str() const noexcept { return str; }
-  std::string toString() const noexcept override { return str; }
+  std::string toString() const noexcept { return str; }
 };
 
 inline $String newString(std::string str) { return $String::make(str); }

@@ -1,265 +1,301 @@
 import { } from "ast";
 import { } from "parser";
 
-function Type_isValType(name: String): boolean {
+function isValType(name: String): boolean {
   return name === "i8" || name === "i16" || name === "i32" || name === "i64" || name === "i128" || name === "u8" || name === "u16" || name === "u32" || name === "u64" || name === "u128" || name === "f32" || name === "f64" || name === "f128" || name === "void";
 }
 
-function InterfaceDecl_declgen(node: ASTNode): String {
+function declgen(node: InterfaceDecl): String {
   return "struct ".add(node.name).add(";");
 }
-function FunctionDecl_declgen(node: ASTNode): String {
-  let result: String = ASTNode_codegen(node.left).add(" ").add(node.name).add("(");
+function declgen(node: ClassDecl): String {
+  return "struct ".add(node.name).add(";");
+}
+function declgen(node: FunctionDecl): String {
+  let result: String = codegen(node.returnType).add(" ").add(node.name).add("(");
   let i: i32 = 0;
-  while (i < node.args.length()) {
+  while (i < node.params.length()) {
     if (i > 0) result = result.add(", ");
-    result = result.add(ASTNode_codegen(node.args[i]));
+    result = result.add(codegen(node.params[i]));
     ++i;
   }
   return result.add(");");
 }
 
-function ASTNode_codegen(node: ASTNode): String {
-  if (node.type == AST_Type) {
-    if (node.name === "boolean") return "bool";
+function codegen(node: Type): String {
+  if (node.name === "boolean") return "bool";
 
-    let name: String = null;
-    if (Type_isValType(node.name)) name = node.name;
-    else name = "AutoRef<".add(node.name).add(">");
+  let name: String = null;
+  if (isValType(node.name)) name = node.name;
+  else name = "AutoRef<".add(node.name).add(">");
 
-    if (node.arrayDepth > 0) {
-      let i: i32 = 0;
-      while (i < node.arrayDepth) {
-        name = "AutoRef<Array<".add(name).add(">>");
-        ++i;
-      }
-    }
-    return name;
+  let i: i32 = 0;
+  while (i < node.arrayDepth) {
+    name = "AutoRef<Array<".add(name).add(">>");
+    ++i;
   }
-  if (node.type == AST_NumberLiteral) {
-    if (node.valueNum == int(node.valueNum)) return StringFrom(int(node.valueNum));
-    return StringFrom(node.valueNum).add("f");
-  }
-  if (node.type == AST_StringLiteral) {
-    return "newString(".add(node.valueStr).add(")");
-  }
-  if (node.type == AST_BoolLiteral) {
-    if (node.valueBool) return "true";
-    return "false";
-  }
-  if (node.type == AST_NullLiteral) {
-    return "nullptr";
-  }
-  if (node.type == AST_Variable) {
-    return node.name;
-  }
-  if (node.type == AST_BinaryOp) {
-    if (node.op === "**")
-      return "std::pow(".add(ASTNode_codegen(node.left)).add(", ").add(ASTNode_codegen(node.right)).add(")");
-    if (node.op === "===")
-      return "(*(".add(ASTNode_codegen(node.left)).add(") == (").add(ASTNode_codegen(node.right)).add("))");
-    if (node.op === "!==")
-      return "(*(".add(ASTNode_codegen(node.left)).add(") != (").add(ASTNode_codegen(node.right)).add("))");
-    return "(".add(ASTNode_codegen(node.left)).add(" ").add(node.op).add(" ").add(ASTNode_codegen(node.right)).add(")");
-  }
-  if (node.type == AST_UnaryOp) {
-    if (node.op === "new") {
-      let result: String = "AutoRef<".add(ASTNode_codegen(node.right.left)).add(">::make(");
-      let i: i32 = 0;
-      while (i < node.right.args.length()) {
-        if (i > 0) result = result.add(", ");
-        result = result.add(ASTNode_codegen(node.right.args[i]));
-        ++i;
-      }
-      return result.add(")");
-    }
-    if (node.right) return "(".add(node.op).add(ASTNode_codegen(node.right)).add(")");
-    return "(".add(ASTNode_codegen(node.left)).add(node.op).add(")");
-  }
-  if (node.type == AST_Assignment) {
-    return ASTNode_codegen(node.left).add(" = ").add(ASTNode_codegen(node.right));
-  }
-  if (node.type == AST_ArrayAccess) {
-    return ASTNode_codegen(node.left).add("->at(").add(ASTNode_codegen(node.right)).add(")");
-  }
-  if (node.type == AST_FieldAccess) {
-    return ASTNode_codegen(node.left).add("->").add(node.name);
-  }
-  if (node.type == AST_FunctionCall) {
-    let result: String = ASTNode_codegen(node.left).add("(");
+  return name;
+}
+function codegen(node: Expression): String {
+  let numberLiteral: NumberLiteral = node as NumberLiteral; if (numberLiteral) return codegen(numberLiteral);
+  let stringLiteral: StringLiteral = node as StringLiteral; if (stringLiteral) return codegen(stringLiteral);
+  let boolLiteral: BoolLiteral = node as BoolLiteral; if (boolLiteral) return codegen(boolLiteral);
+  let nullLiteral: NullLiteral = node as NullLiteral; if (nullLiteral) return codegen(nullLiteral);
+  let variable: Variable = node as Variable; if (variable) return codegen(variable);
+  let binaryOp: BinaryOp = node as BinaryOp; if (binaryOp) return codegen(binaryOp);
+  let unaryOp: UnaryOp = node as UnaryOp; if (unaryOp) return codegen(unaryOp);
+  let assignment: Assignment = node as Assignment; if (assignment) return codegen(assignment);
+  let arrayAccess: ArrayAccess = node as ArrayAccess; if (arrayAccess) return codegen(arrayAccess);
+  let fieldAccess: FieldAccess = node as FieldAccess; if (fieldAccess) return codegen(fieldAccess);
+  let functionCall: FunctionCall = node as FunctionCall; if (functionCall) return codegen(functionCall);
+  let typeCast: TypeCast = node as TypeCast; if (typeCast) return codegen(typeCast);
+  let arrayLiteral: ArrayLiteral = node as ArrayLiteral; if (arrayLiteral) return codegen(arrayLiteral);
+  let objectLiteral: ObjectLiteral = node as ObjectLiteral; if (objectLiteral) return codegen(objectLiteral);
+}
+function codegen(node: Statement): String {
+  let varDecl: VarDecl = node as VarDecl; if (varDecl) return codegen(varDecl);
+  let exprStmt: ExprStmt = node as ExprStmt; if (exprStmt) return codegen(exprStmt);
+  let block: Block = node as Block; if (block) return codegen(block);
+  let ifStmt: IfStmt = node as IfStmt; if (ifStmt) return codegen(ifStmt);
+  let whileStmt: WhileStmt = node as WhileStmt; if (whileStmt) return codegen(whileStmt);
+  let returnStmt: ReturnStmt = node as ReturnStmt; if (returnStmt) return codegen(returnStmt);
+  let functionDecl: FunctionDecl = node as FunctionDecl; if (functionDecl) return codegen(functionDecl);
+  let interfaceDecl: InterfaceDecl = node as InterfaceDecl; if (interfaceDecl) return declgen(interfaceDecl);
+  let importStmt: Import = node as Import; if (importStmt) return codegen(importStmt);
+  let exportStmt: Export = node as Export; if (exportStmt) return codegen(exportStmt);
+  let methodDecl: MethodDecl = node as MethodDecl; if (methodDecl) return codegen(methodDecl);
+  let classDecl: ClassDecl = node as ClassDecl; if (classDecl) return codegen(classDecl);
+}
+function codegen(node: NumberLiteral): String {
+  if (node.value == int(node.value)) return StringFrom(int(node.value));
+  return StringFrom(node.value).add("f");
+}
+function codegen(node: StringLiteral): String {
+  return "newString(".add(node.value).add(")");
+}
+function codegen(node: BoolLiteral): String {
+  if (node.value) return "true";
+  return "false";
+}
+function codegen(node: NullLiteral): String {
+  return "nullptr";
+}
+function codegen(node: Variable): String {
+  return node.name;
+}
+function codegen(node: BinaryOp): String {
+  if (node.op === "**")
+    return "std::pow(".add(codegen(node.left)).add(", ").add(codegen(node.right)).add(")");
+  if (node.op === "===")
+    return "(*(".add(codegen(node.left)).add(") == (").add(codegen(node.right)).add("))");
+  if (node.op === "!==")
+    return "(*(".add(codegen(node.left)).add(") != (").add(codegen(node.right)).add("))");
+  return "(".add(codegen(node.left)).add(" ").add(node.op).add(" ").add(codegen(node.right)).add(")");
+}
+function codegen(node: UnaryOp): String {
+  if (node.op === "new") {
+    let operand: FunctionCall = node.operand as FunctionCall;
+    let result: String = "AutoRef<".add(codegen(operand.fun)).add(">::make(");
     let i: i32 = 0;
-    while (i < node.args.length()) {
+    while (i < operand.args.length()) {
       if (i > 0) result = result.add(", ");
-      result = result.add(ASTNode_codegen(node.args[i]));
+      result = result.add(codegen(operand.args[i]));
       ++i;
     }
     return result.add(")");
   }
-  if (node.type == AST_TypeCast) {
-    let castedType: String = ASTNode_codegen(node.right);
-    return "(".add(ASTNode_codegen(node.left)).add(".as<").add(castedType.substring(8, castedType.length() - 1)).add(">())");
+  if (node.prefix)
+    return "(".add(node.op).add(codegen(node.operand)).add(")");
+  return "(".add(codegen(node.operand)).add(node.op).add(")");
+}
+function codegen(node: Assignment): String {
+  return codegen(node.lvalue).add(" = ").add(codegen(node.rvalue));
+}
+function codegen(node: ArrayAccess): String {
+  return codegen(node.array).add("->at(").add(codegen(node.index)).add(")");
+}
+function codegen(node: FieldAccess): String {
+  return codegen(node.object).add("->").add(node.field);
+}
+function codegen(node: FunctionCall): String {
+  let result: String = codegen(node.fun).add("(");
+  let i: i32 = 0;
+  while (i < node.args.length()) {
+    if (i > 0) result = result.add(", ");
+    result = result.add(codegen(node.args[i]));
+    ++i;
   }
-  if (node.type == AST_ArrayLiteral) {
-    if (node.args.length() > 0) {
-      let result: String = "newArray(std::initializer_list(";
-      let i: i32 = 0;
-      while (i < node.args.length()) {
-        if (i > 0) result = result.add(", ");
-        result = result.add(ASTNode_codegen(node.args[i]));
-        ++i;
-      }
-      return result.add("))");
-    }
-    return ASTNode_codegen(node.injectedType).add("::make()");
-  }
-  if (node.type == AST_ObjectLiteral) {
-    let result: String = ASTNode_codegen(node.injectedType).add("::make(); ");
+  return result.add(")");
+}
+function codegen(node: TypeCast): String {
+  let castedType: String = codegen(node.type);
+  return "(".add(codegen(node.expr)).add(".as<").add(castedType.substring(8, castedType.length() - 1)).add(">())");
+}
+function codegen(node: ArrayLiteral): String {
+  if (node.elements.length() > 0) {
+    let result: String = "newArray(std::initializer_list(";
     let i: i32 = 0;
-    while (i < node.args.length()) {
-      if (i > 0) result = result.add("; ");
-      node.args[i].injectedName = node.injectedName;
-      result = result.add(ASTNode_codegen(node.args[i]));
-      ++i;
-    }
-    return result;
-  }
-  if (node.type == AST_NameType) {
-    return ASTNode_codegen(node.right).add(" ").add(node.name);
-  }
-  if (node.type == AST_KeyVal) {
-    return node.injectedName.add("->").add(node.name).add(" = ").add(ASTNode_codegen(node.right));
-  }
-  if (node.type == AST_VarDecl) {
-    node.right.injectedName = node.name;
-    node.right.injectedType = node.left;
-
-    return ASTNode_codegen(node.left).add(" ").add(node.name).add(" = ").add(ASTNode_codegen(node.right)).add(";");
-  }
-  if (node.type == AST_ExprStmt) {
-    return ASTNode_codegen(node.left).add(";");
-  }
-  if (node.type == AST_Block) {
-    let result: String = "{\n";
-    let i: i32 = 0;
-    while (i < node.args.length()) {
-      result = result.add("  ").add(ASTNode_codegen(node.args[i])).add("\n");
-      ++i;
-    }
-    return result.add("}");
-  }
-  if (node.type == AST_IfStmt) {
-    let result: String = "if (".add(ASTNode_codegen(node.cond)).add(")").add(ASTNode_codegen(node.left));
-    if (node.right) result = result.add(" else ").add(ASTNode_codegen(node.right));
-    return result;
-  }
-  if (node.type == AST_WhileStmt) {
-    return "while (".add(ASTNode_codegen(node.cond)).add(")").add(ASTNode_codegen(node.left));
-  }
-  if (node.type == AST_ReturnStmt) {
-    return "return ".add(ASTNode_codegen(node.left)).add(";");
-  }
-  if (node.type == AST_FunctionDecl) {
-    let result: String = ASTNode_codegen(node.left).add(" ").add(node.name).add("(");
-    let i: i32 = 0;
-    while (i < node.args.length()) {
+    while (i < node.elements.length()) {
       if (i > 0) result = result.add(", ");
-      result = result.add(ASTNode_codegen(node.args[i]));
+      result = result.add(codegen(node.elements[i]));
       ++i;
     }
-    return result.add(") ").add(ASTNode_codegen(node.right));
+    return result.add("))");
   }
-  if (node.type == AST_InterfaceDecl) {
-    let result: String = "struct ".add(node.name).add(" : virtual public Object {\n");
-    let i: i32 = 0;
-    while (i < node.args.length()) {
-      result = result.add("  ").add(ASTNode_codegen(node.args[i])).add(";\n");
-      ++i;
-    }
-    return result.add("};");
+  return codegen(node.injectedType).add("::make()");
+}
+function codegen(node: KeyVal): String {
+  return node.injectedName.add("->").add(node.key).add(" = ").add(codegen(node.val));
+}
+function codegen(node: ObjectLiteral): String {
+  let result: String = codegen(node.injectedType).add("::make(); ");
+  let i: i32 = 0;
+  while (i < node.properties.length()) {
+    if (i > 0) result = result.add("; ");
+    node.properties[i].injectedName = node.injectedName;
+    result = result.add(codegen(node.properties[i]));
+    ++i;
   }
-  if (node.type == AST_Program) {
-    let result: String = "#include \"src/core/core.hpp\"\n#include <cmath>\n#include <initializer_list>\n\n";
+  return result;
+}
+function codegen(node: VarDecl): String {
+  node.init.injectedName = node.name;
+  node.init.injectedType = node.type;
 
-    let i: i32 = 0;
-    while (i < node.args.length()) {
-      if (node.args[i].type == AST_Import)
-        result = result.add(ASTNode_codegen(node.args[i])).add("\n");
-      ++i;
-    }
-
-    result = result.add("\n");
-    i = 0;
-    while (i < node.args.length()) {
-      if (node.args[i].type == AST_InterfaceDecl || node.args[i].type == AST_ClassDecl)
-        result = result.add(InterfaceDecl_declgen(node.args[i])).add("\n");
-      ++i;
-    }
-
-    result = result.add("\n");
-    i = 0;
-    while (i < node.args.length()) {
-      if (node.args[i].type == AST_FunctionDecl) {
-        if (node.args[i].name === "main")
-          node.args[i].name = "$main";
-        result = result.add(FunctionDecl_declgen(node.args[i])).add("\n");
-      }
-      if (node.args[i].type == AST_Export && node.args[i].right.type == AST_FunctionDecl)
-        result = result.add(FunctionDecl_declgen(node.args[i].right)).add("\n");
-      ++i;
-    }
-
-    result = result.add("\n");
-    i = 0;
-    while (i < node.args.length()) {
-      if (node.args[i].type != AST_Import)
-        result = result.add(ASTNode_codegen(node.args[i])).add("\n");
-      ++i;
-    }
-
-    return result;
+  return codegen(node.type).add(" ").add(node.name).add(" = ").add(codegen(node.init)).add(";");
+}
+function codegen(node: ExprStmt): String {
+  return codegen(node.expr).add(";");
+}
+function codegen(node: Block): String {
+  let result: String = "{\n";
+  let i: i32 = 0;
+  while (i < node.statements.length()) {
+    result = result.add("  ").add(codegen(node.statements[i])).add("\n");
+    ++i;
   }
-  if (node.type == AST_Import) {
-    let name: String = node.name.substring(1, node.name.length() - 1);
-    transpile(name.add(".tn"), ".hpp");
-    return "#include \"".add(name).add(".hpp\"");
+  return result.add("}");
+}
+function codegen(node: IfStmt): String {
+  let result: String = "if (".add(codegen(node.cond)).add(") ").add(codegen(node.thenBranch));
+  if (node.elseBranch) result = result.add(" else ").add(codegen(node.elseBranch));
+  return result;
+}
+function codegen(node: WhileStmt): String {
+  return "while (".add(codegen(node.cond)).add(")").add(codegen(node.body));
+}
+function codegen(node: ReturnStmt): String {
+  return "return ".add(codegen(node.expr)).add(";");
+}
+function codegen(node: NameType): String {
+  return codegen(node.type).add(" ").add(node.name);
+}
+function codegen(node: FunctionDecl): String {
+  let result: String = codegen(node.returnType).add(" ").add(node.name).add("(");
+  let i: i32 = 0;
+  while (i < node.params.length()) {
+    if (i > 0) result = result.add(", ");
+    result = result.add(codegen(node.params[i]));
+    ++i;
   }
-  if (node.type == AST_Export) {
-    return ASTNode_codegen(node.right);
+  return result.add(") ").add(codegen(node.body));
+}
+function codegen(node: InterfaceDecl): String {
+  let result: String = "struct ".add(node.name).add(" : virtual public Object {\n");
+  let i: i32 = 0;
+  while (i < node.fields.length()) {
+    result = result.add("  ").add(codegen(node.fields[i])).add(";\n");
+    ++i;
   }
-  if (node.type == AST_ClassDecl) {
-    let result: String = "struct ".add(node.name).add(" : virtual public ");
-    if (node.valueStr) result = result.add(node.valueStr);
-    else result = result.add("Object");
-    result = result.add(" {\n");
-    let i: i32 = 0;
-    while (i < node.args.length()) {
-      result = result.add("  ").add(ASTNode_codegen(node.args[i])).add(";\n");
-      ++i;
-    }
-    result = result.add(node.name).add("() = default;\nvirtual ~").add(node.name).add("() = default;\n");
-    i = 0;
-    while (i < node.methods.length()) {
-      node.methods[i].injectedName = node.name;
-      result = result.add("  ").add(ASTNode_codegen(node.methods[i])).add("\n");
-      ++i;
-    }
-    return result.add("};");
-  }
-  if (node.type == AST_MethodDecl) {
-    let result: String = "";
-    if (node.name === "constructor") result = node.injectedName;
-    else result = "virtual ".add(ASTNode_codegen(node.left)).add(" ").add(node.name);
-    result = result.add("(");
-    let i: i32 = 0;
-    while (i < node.args.length()) {
-      if (i > 0) result = result.add(", ");
-      result = result.add(ASTNode_codegen(node.args[i]));
-      ++i;
-    }
-    return result.add(") ").add(ASTNode_codegen(node.right));
+  return result.add("};");
+}
+function codegen(node: Program): String {
+  let result: String = "#include \"src/core/core.hpp\"\n#include <cmath>\n#include <initializer_list>\n\n";
+
+  let i: i32 = 0;
+  while (i < node.statements.length()) {
+    let importStmt: Import = node.statements[i] as Import;
+    if (importStmt) result = result.add(codegen(importStmt)).add("\n");
+    ++i;
   }
 
-  return "UNKNOWN!!!";
+  result = result.add("\n");
+  i = 0;
+  while (i < node.statements.length()) {
+    let interfaceDecl: InterfaceDecl = node.statements[i] as InterfaceDecl;
+    let classDecl: ClassDecl = node.statements[i] as ClassDecl;
+    if (interfaceDecl) result = result.add(declgen(interfaceDecl)).add("\n");
+    if (classDecl) result = result.add(declgen(classDecl)).add("\n");
+    ++i;
+  }
+
+  result = result.add("\n");
+  i = 0;
+  while (i < node.statements.length()) {
+    let functionDecl: FunctionDecl = node.statements[i] as FunctionDecl;
+    if (functionDecl) {
+      if (functionDecl.name === "main")
+        functionDecl.name = "$main";
+      result = result.add(declgen(functionDecl)).add("\n");
+    }
+    let exportStmt: Export = node.statements[i] as Export;
+    if (exportStmt) {
+      let functionDecl: FunctionDecl = exportStmt.statement as FunctionDecl;
+      if (functionDecl) result = result.add(declgen(functionDecl)).add("\n");
+    }
+    ++i;
+  }
+
+  result = result.add("\n");
+  i = 0;
+  while (i < node.statements.length()) {
+    let importStmt: Import = node.statements[i] as Import;
+    if (!importStmt)
+      result = result.add(codegen(node.statements[i])).add("\n");
+    ++i;
+  }
+
+  return result;
+}
+function codegen(node: Import): String {
+  let path: String = node.path.substring(1, node.path.length() - 1);
+  transpile(path.add(".tn"), ".hpp");
+  return "#include \"".add(path).add(".hpp\"");
+}
+function codegen(node: Export): String {
+  return codegen(node.statement);
+}
+function codegen(node: ClassDecl): String {
+  let result: String = "struct ".add(node.name).add(" : virtual public ");
+  if (node.extend) result = result.add(node.extend);
+  else result = result.add("Object");
+  result = result.add(" {\n");
+  let i: i32 = 0;
+  while (i < node.fields.length()) {
+    result = result.add("  ").add(codegen(node.fields[i])).add(";\n");
+    ++i;
+  }
+  result = result.add(node.name).add("() = default;\nvirtual ~").add(node.name).add("() = default;\n");
+  i = 0;
+  while (i < node.methods.length()) {
+    node.methods[i].injectedName = node.name;
+    result = result.add("  ").add(codegen(node.methods[i])).add(";\n");
+    ++i;
+  }
+  return result.add("};");
+}
+function codegen(node: MethodDecl): String {
+  let result: String = null;
+  if (node.name === "constructor") result = node.injectedName;
+  else result = "virtual ".add(codegen(node.returnType)).add(" ").add(node.name);
+  result = result.add("(");
+  let i: i32 = 0;
+  while (i < node.params.length()) {
+    if (i > 0) result = result.add(", ");
+    result = result.add(codegen(node.params[i]));
+    ++i;
+  }
+  return result.add(") ").add(codegen(node.body));
 }
 
 let transpiledFiles: String[] = [];
@@ -276,15 +312,15 @@ function transpile(path: String, ext: String): String {
 
   if (needTranspilation) {
     let code: File = open(path, "r");
-    let lexer: Lexer = Lexer_new(code.read());
-    let parser: Parser = Parser_new(lexer);
-    let program: ASTNode = Parser_parse(parser);
+    let lexer: Lexer = new Lexer(code.read());
+    let parser: Parser = new Parser(lexer);
+    let program: Program = parser.parse();
 
     let transpiledPath: String = "build/".add(path.split(".")[0]).add(ext);
     let transpiledFile: File = open(transpiledPath, "w");
 
     if (ext === ".hpp") transpiledFile.write("#pragma once\n");
-    transpiledFile.write(ASTNode_codegen(program));
+    transpiledFile.write(codegen(program));
     if (ext === ".cpp")
       transpiledFile.write("\nint main(int argc, char* argv[]) {\n  AutoRef<Array<AutoRef<String>>> args = AutoRef<Array<AutoRef<String>>>::make();\n  for (int i = 0; i < argc; ++i)\n    args->push(AutoRef<String>::make(argv[i]));\n  return $main(args);\n}");
 

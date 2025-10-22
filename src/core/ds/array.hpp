@@ -363,7 +363,7 @@ public:
   bool operator==(const $Array<T> &that) const noexcept { return data == that->data; }
   bool operator!=(const $Array<T> &that) const noexcept { return data != that->data; }
 
-  std::string toString() const noexcept override {
+  std::string toString() const noexcept {
     std::ostringstream oss;
     oss << "[";
     bool first = true;

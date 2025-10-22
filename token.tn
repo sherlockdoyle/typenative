@@ -56,13 +56,16 @@ let TOKEN_EXPORT: i32 = 54;
 let TOKEN_CLASS: i32 = 55;
 let TOKEN_NEW: i32 = 56;
 
-interface Token {
+class Token {
   type: i32;
   value: String;
   line: i32;
   column: i32;
-}
-function Token_new(type: i32, value: String, line: i32, column: i32): Token {
-  let token: Token = { type: type, value: value, line: line, column: column };
-  return token;
+
+  constructor(type: i32, value: String, line: i32, column: i32) {
+    this.type = type;
+    this.value = value;
+    this.line = line;
+    this.column = column;
+  }
 }
