@@ -106,5 +106,5 @@ TypeNative also adds some features that TypeScript doesn't have. My main goal is
     $comptime: if ($compileTimeNumber == 1) {
       // compile time conditional
     }
-    const compileTimePrint = $comptime(print);
+    const $compileTimePrint = $comptime(print);
     ```
