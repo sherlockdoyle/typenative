@@ -1,355 +1,439 @@
-let AST_Type: i32 = 0;
-let AST_NumberLiteral: i32 = 1;
-let AST_StringLiteral: i32 = 2;
-let AST_BoolLiteral: i32 = 3;
-let AST_NullLiteral: i32 = 4;
-let AST_Variable: i32 = 5;
-let AST_BinaryOp: i32 = 6;
-let AST_UnaryOp: i32 = 7;
-let AST_Assignment: i32 = 8;
-let AST_ArrayAccess: i32 = 9;
-let AST_FieldAccess: i32 = 10;
-let AST_FunctionCall: i32 = 11;
-let AST_TypeCast: i32 = 12;
-let AST_ArrayLiteral: i32 = 13;
-let AST_ObjectLiteral: i32 = 14;
-let AST_NameType: i32 = 15;
-let AST_VarDecl: i32 = 16;
-let AST_ExprStmt: i32 = 17;
-let AST_Block: i32 = 18;
-let AST_IfStmt: i32 = 19;
-let AST_WhileStmt: i32 = 20;
-let AST_ReturnStmt: i32 = 21;
-let AST_FunctionDecl: i32 = 22;
-let AST_InterfaceDecl: i32 = 23;
-let AST_Program: i32 = 24;
-let AST_KeyVal: i32 = 25;
-let AST_Import: i32 = 26;
-let AST_Export: i32 = 27;
-let AST_ClassDecl: i32 = 28;
-let AST_MethodDecl: i32 = 29;
+class ASTNode {
+  constructor(_: i32) { }
+  toString(): String { return ""; }
+}
+class Expression extends ASTNode {
+  injectedName: String;
+  injectedType: Type;
+}
+class Statement extends ASTNode { }
 
-interface ASTNode {
-  type: i32;
+class Type extends ASTNode {
   name: String;
   arrayDepth: i32;
-  valueNum: f64;
-  valueStr: String;
-  valueBool: boolean;
-  op: String;
-  cond: ASTNode;
-  left: ASTNode;
-  right: ASTNode;
-  args: ASTNode[];
-  methods: ASTNode[];
-  imports: String[];
-  injectedName: String;
-  injectedType: ASTNode;
-}
-
-function Type_new(n: String, depth: i32): ASTNode {
-  let type: ASTNode = { type: AST_Type, name: n, arrayDepth: depth };
-  return type;
-}
-function NumberLiteral_new(value: f64): ASTNode {
-  let num: ASTNode = { type: AST_NumberLiteral, valueNum: value };
-  return num;
-}
-function StringLiteral_new(value: String): ASTNode {
-  let str: ASTNode = { type: AST_StringLiteral, valueStr: value };
-  return str;
-}
-function BoolLiteral_new(value: boolean): ASTNode {
-  let boolLit: ASTNode = { type: AST_BoolLiteral, valueBool: value };
-  return boolLit;
-}
-function NullLiteral_new(): ASTNode {
-  let nullLit: ASTNode = { type: AST_NullLiteral };
-  return nullLit;
-}
-function Variable_new(name: String): ASTNode {
-  let variable: ASTNode = { type: AST_Variable, name: name };
-  return variable;
-}
-function BinaryOp_new(op: String, left: ASTNode, right: ASTNode): ASTNode {
-  let binaryOp: ASTNode = { type: AST_BinaryOp, op: op, left: left, right: right };
-  return binaryOp;
-}
-function UnaryOp_new(op: String, operand: ASTNode, prefix: boolean): ASTNode {
-  if (prefix) {
-    let unaryOp: ASTNode = { type: AST_UnaryOp, op: op, right: operand };
-    return unaryOp;
-  } else {
-    let unaryOp: ASTNode = { type: AST_UnaryOp, op: op, left: operand };
-    return unaryOp;
+  constructor(name: String, arrayDepth: i32) {
+    this.name = name;
+    this.arrayDepth = arrayDepth;
   }
-}
-function Assignment_new(l: ASTNode, r: ASTNode): ASTNode {
-  let assignment: ASTNode = { type: AST_Assignment, left: l, right: r };
-  return assignment;
-}
-function ArrayAccess_new(a: ASTNode, i: ASTNode): ASTNode {
-  let arrayAccess: ASTNode = { type: AST_ArrayAccess, left: a, right: i };
-  return arrayAccess;
-}
-function FieldAccess_new(o: ASTNode, f: String): ASTNode {
-  let fieldAccess: ASTNode = { type: AST_FieldAccess, left: o, name: f };
-  return fieldAccess;
-}
-function FunctionCall_new(f: ASTNode, args: ASTNode[]): ASTNode {
-  let functionCall: ASTNode = { type: AST_FunctionCall, left: f, args: args };
-  return functionCall;
-}
-function TypeCast_new(e: ASTNode, t: ASTNode): ASTNode {
-  let typeCast: ASTNode = { type: AST_TypeCast, left: e, right: t };
-  return typeCast;
-}
-function ArrayLiteral_new(elements: ASTNode[]): ASTNode {
-  let arrayLiteral: ASTNode = { type: AST_ArrayLiteral, args: elements };
-  return arrayLiteral;
-}
-function ObjectLiteral_new(properties: ASTNode[]): ASTNode {
-  let objectLiteral: ASTNode = { type: AST_ObjectLiteral, args: properties };
-  return objectLiteral;
-}
-function NameType_new(n: String, t: ASTNode): ASTNode {
-  let nameType: ASTNode = { type: AST_NameType, name: n, right: t };
-  return nameType;
-}
-function KeyVal_new(k: String, v: ASTNode): ASTNode {
-  let keyVal: ASTNode = { type: AST_KeyVal, name: k, right: v };
-  return keyVal;
-}
-function VarDecl_new(n: String, t: ASTNode, i: ASTNode): ASTNode {
-  let varDecl: ASTNode = { type: AST_VarDecl, name: n, left: t, right: i };
-  return varDecl;
-}
-function ExprStmt_new(e: ASTNode): ASTNode {
-  let exprStmt: ASTNode = { type: AST_ExprStmt, left: e };
-  return exprStmt;
-}
-function Block_new(stmts: ASTNode[]): ASTNode {
-  let block: ASTNode = { type: AST_Block, args: stmts };
-  return block;
-}
-function IfStmt_new(c: ASTNode, t: ASTNode, e: ASTNode): ASTNode {
-  let ifStmt: ASTNode = { type: AST_IfStmt, cond: c, left: t, right: e };
-  return ifStmt;
-}
-function WhileStmt_new(c: ASTNode, b: ASTNode): ASTNode {
-  let whileStmt: ASTNode = { type: AST_WhileStmt, cond: c, left: b };
-  return whileStmt;
-}
-function ReturnStmt_new(v: ASTNode): ASTNode {
-  let returnStmt: ASTNode = { type: AST_ReturnStmt, left: v };
-  return returnStmt;
-}
-function FunctionDecl_new(n: String, p: ASTNode[], rt: ASTNode, b: ASTNode): ASTNode {
-  let functionDecl: ASTNode = { type: AST_FunctionDecl, name: n, args: p, left: rt, right: b };
-  return functionDecl;
-}
-function InterfaceDecl_new(n: String, m: ASTNode[]): ASTNode {
-  let interfaceDecl: ASTNode = { type: AST_InterfaceDecl, name: n, args: m };
-  return interfaceDecl;
-}
-function Program_new(stmts: ASTNode[]): ASTNode {
-  let program: ASTNode = { type: AST_Program, args: stmts };
-  return program;
-}
-function Import_new(m: String, s: String[]): ASTNode {
-  let imprt: ASTNode = { type: AST_Import, imports: s, name: m };
-  return imprt;
-}
-function Export_new(s: ASTNode): ASTNode {
-  let exportStmt: ASTNode = { type: AST_Export, right: s };
-  return exportStmt;
-}
-function ClassDecl_new(n: String, e: String, f: ASTNode[], m: ASTNode[]): ASTNode {
-  let classDecl: ASTNode = { type: AST_ClassDecl, name: n, valueStr: e, args: f, methods: m };
-  return classDecl;
-}
-function MethodDecl_new(n: String, p: ASTNode[], rt: ASTNode, b: ASTNode): ASTNode {
-  let methodDecl: ASTNode = { type: AST_MethodDecl, name: n, args: p, left: rt, right: b };
-  return methodDecl;
-}
-
-function ASTNode_toString(node: ASTNode): String {
-  if (node.type == AST_Type) {
-    let result: String = node.name;
+  toString(): String {
+    let result: String = this.name;
     let i: i32 = 0;
-    while (i < node.arrayDepth) {
+    while (i < this.arrayDepth) {
       result = result.add("[]");
       ++i;
     }
     return result;
   }
-  if (node.type == AST_NumberLiteral) {
-    if (node.valueNum == int(node.valueNum)) return StringFrom(int(node.valueNum));
-    return StringFrom(node.valueNum);
+}
+
+class NumberLiteral extends Expression {
+  value: f64;
+  constructor(value: f64) {
+    this.value = value;
   }
-  if (node.type == AST_StringLiteral) {
-    return node.valueStr;
+  toString(): String {
+    if (this.value == int(this.value)) return StringFrom(int(this.value));
+    return StringFrom(this.value);
   }
-  if (node.type == AST_BoolLiteral) {
-    if (node.valueBool) return "true";
+}
+
+class StringLiteral extends Expression {
+  value: String;
+  constructor(value: String) {
+    this.value = value;
+  }
+  toString(): String {
+    return this.value;
+  }
+}
+
+class BoolLiteral extends Expression {
+  value: boolean;
+  constructor(value: boolean) {
+    this.value = value;
+  }
+  toString(): String {
+    if (this.value) return "true";
     return "false";
   }
-  if (node.type == AST_NullLiteral) {
+}
+
+class NullLiteral extends Expression {
+  constructor(_: i32) { }
+  toString(): String {
     return "null";
   }
-  if (node.type == AST_Variable) {
-    return node.name;
+}
+
+class Variable extends Expression {
+  name: String;
+  constructor(name: String) {
+    this.name = name;
   }
-  if (node.type == AST_BinaryOp) {
-    return "(".add(ASTNode_toString(node.left)).add(" ").add(node.op).add(" ").add(ASTNode_toString(node.right)).add(")");
+  toString(): String {
+    return this.name;
   }
-  if (node.type == AST_UnaryOp) {
-    if (node.op == "new") return "(new ".add(ASTNode_toString(node.right)).add(")");
-    if (node.right) return "(".add(node.op).add(ASTNode_toString(node.right)).add(")");
-    return "(".add(ASTNode_toString(node.left)).add(node.op).add(")");
+}
+
+class BinaryOp extends Expression {
+  op: String;
+  left: Expression;
+  right: Expression;
+  constructor(op: String, left: Expression, right: Expression) {
+    this.op = op;
+    this.left = left;
+    this.right = right;
   }
-  if (node.type == AST_Assignment) {
-    return ASTNode_toString(node.left).add(" = ").add(ASTNode_toString(node.right));
+  toString(): String {
+    return "(".add(this.left.toString()).add(" ").add(this.op).add(" ").add(this.right.toString()).add(")");
   }
-  if (node.type == AST_ArrayAccess) {
-    return ASTNode_toString(node.left).add("[").add(ASTNode_toString(node.right)).add("]");
+}
+
+class UnaryOp extends Expression {
+  op: String;
+  operand: Expression;
+  prefix: boolean;
+  constructor(op: String, operand: Expression, prefix: boolean) {
+    this.op = op;
+    this.operand = operand;
+    this.prefix = prefix;
   }
-  if (node.type == AST_FieldAccess) {
-    return ASTNode_toString(node.left).add(".").add(node.name);
+  toString(): String {
+    if (this.op === "new") return "(new ".add(this.operand.toString()).add(")");
+    if (this.prefix) return "(".add(this.op).add(this.operand.toString()).add(")");
+    return "(".add(this.operand.toString()).add(this.op).add(")");
   }
-  if (node.type == AST_FunctionCall) {
-    let result: String = ASTNode_toString(node.left).add("(");
+}
+
+class Assignment extends Expression {
+  lvalue: Expression;
+  rvalue: Expression;
+  constructor(lvalue: Expression, rvalue: Expression) {
+    this.lvalue = lvalue;
+    this.rvalue = rvalue;
+  }
+  toString(): String {
+    return this.lvalue.toString().add(" = ").add(this.rvalue.toString());
+  }
+}
+
+class ArrayAccess extends Expression {
+  array: Expression;
+  index: Expression;
+  constructor(array: Expression, index: Expression) {
+    this.array = array;
+    this.index = index;
+  }
+  toString(): String {
+    return this.array.toString().add("[").add(this.index.toString()).add("]");
+  }
+}
+
+class FieldAccess extends Expression {
+  object: Expression;
+  field: String;
+  constructor(object: Expression, field: String) {
+    this.object = object;
+    this.field = field;
+  }
+  toString(): String {
+    return this.object.toString().add(".").add(this.field);
+  }
+}
+
+class FunctionCall extends Expression {
+  fun: Expression;
+  args: Expression[];
+  constructor(fun: Expression, args: Expression[]) {
+    this.fun = fun;
+    this.args = args;
+  }
+  toString(): String {
+    let result: String = this.fun.toString().add("(");
     let i: i32 = 0;
-    while (i < node.args.length()) {
+    while (i < this.args.length()) {
       if (i > 0) result = result.add(", ");
-      result = result.add(ASTNode_toString(node.args[i]));
+      result = result.add(this.args[i].toString());
       ++i;
     }
     return result.add(")");
   }
-  if (node.type == AST_TypeCast) {
-    return "(".add(ASTNode_toString(node.left)).add(" as ").add(ASTNode_toString(node.right)).add(")");
+}
+
+class TypeCast extends Expression {
+  expr: Expression;
+  type: Type;
+  constructor(expr: Expression, type: Type) {
+    this.expr = expr;
+    this.type = type;
   }
-  if (node.type == AST_ArrayLiteral) {
+  toString(): String {
+    return "(".add(this.expr.toString()).add(" as ").add(this.type.toString()).add(")");
+  }
+}
+
+class ArrayLiteral extends Expression {
+  elements: Expression[];
+  constructor(elements: Expression[]) {
+    this.elements = elements;
+  }
+  toString(): String {
     let result: String = "[";
     let i: i32 = 0;
-    while (i < node.args.length()) {
+    while (i < this.elements.length()) {
       if (i > 0) result = result.add(", ");
-      result = result.add(ASTNode_toString(node.args[i]));
+      result = result.add(this.elements[i].toString());
       ++i;
     }
     return result.add("]");
   }
-  if (node.type == AST_ObjectLiteral) {
+}
+
+class KeyVal {
+  key: String;
+  val: Expression;
+  injectedName: String;
+  constructor(key: String, val: Expression) {
+    this.key = key;
+    this.val = val;
+  }
+  toString(): String {
+    return this.key.add(": ").add(this.val.toString());
+  }
+}
+class ObjectLiteral extends Expression {
+  properties: KeyVal[];
+  constructor(properties: KeyVal[]) {
+    this.properties = properties;
+  }
+  toString(): String {
     let result: String = "{";
     let i: i32 = 0;
-    while (i < node.args.length()) {
+    while (i < this.properties.length()) {
       if (i > 0) result = result.add(", ");
-      result = result.add(ASTNode_toString(node.args[i]));
+      result = result.add(this.properties[i].toString());
       ++i;
     }
     return result.add("}");
   }
-  if (node.type == AST_NameType || node.type == AST_KeyVal) {
-    return node.name.add(": ").add(ASTNode_toString(node.right));
+}
+
+class VarDecl extends Statement {
+  name: String;
+  type: Type;
+  init: Expression;
+  constructor(name: String, type: Type, init: Expression) {
+    this.name = name;
+    this.type = type;
+    this.init = init;
   }
-  if (node.type == AST_VarDecl) {
-    return "let ".add(node.name).add(": ").add(ASTNode_toString(node.left)).add(" = ").add(ASTNode_toString(node.right)).add(";");
+  toString(): String {
+    return "let ".add(this.name).add(": ").add(this.type.toString()).add(" = ").add(this.init.toString()).add(";");
   }
-  if (node.type == AST_ExprStmt) {
-    return ASTNode_toString(node.left).add(";");
+}
+
+class ExprStmt extends Statement {
+  expr: Expression;
+  constructor(expr: Expression) {
+    this.expr = expr;
   }
-  if (node.type == AST_Block) {
+  toString(): String {
+    return this.expr.toString().add(";");
+  }
+}
+
+class Block extends Statement {
+  statements: Statement[];
+  constructor(statements: Statement[]) {
+    this.statements = statements;
+  }
+  toString(): String {
     let result: String = "{\n";
     let i: i32 = 0;
-    while (i < node.args.length()) {
-      result = result.add("  ").add(ASTNode_toString(node.args[i])).add("\n");
+    while (i < this.statements.length()) {
+      result = result.add("  ").add(this.statements[i].toString()).add("\n");
       ++i;
     }
     return result.add("}");
   }
-  if (node.type == AST_IfStmt) {
-    let result: String = "if (".add(ASTNode_toString(node.cond)).add(")").add(ASTNode_toString(node.left));
-    if (node.right) result = result.add(" else ").add(ASTNode_toString(node.right));
+}
+
+class IfStmt extends Statement {
+  cond: Expression;
+  thenBranch: Statement;
+  elseBranch: Statement;
+  constructor(cond: Expression, thenBranch: Statement, elseBranch: Statement) {
+    this.cond = cond;
+    this.thenBranch = thenBranch;
+    this.elseBranch = elseBranch;
+  }
+  toString(): String {
+    let result: String = "if (".add(this.cond.toString()).add(") ").add(this.thenBranch.toString());
+    if (this.elseBranch) result = result.add(" else ").add(this.elseBranch.toString());
     return result;
   }
-  if (node.type == AST_WhileStmt) {
-    return "while (".add(ASTNode_toString(node.cond)).add(")").add(ASTNode_toString(node.left));
+}
+
+class WhileStmt extends Statement {
+  cond: Expression;
+  body: Statement;
+  constructor(cond: Expression, body: Statement) {
+    this.cond = cond;
+    this.body = body;
   }
-  if (node.type == AST_ReturnStmt) {
-    return "return ".add(ASTNode_toString(node.left)).add(";");
+  toString(): String {
+    return "while (".add(this.cond.toString()).add(") ").add(this.body.toString());
   }
-  if (node.type == AST_FunctionDecl) {
-    let result: String = "function ".add(node.name).add("(");
+}
+
+class ReturnStmt extends Statement {
+  expr: Expression;
+  constructor(expr: Expression) {
+    this.expr = expr;
+  }
+  toString(): String {
+    return "return ".add(this.expr.toString()).add(";");
+  }
+}
+
+class NameType {
+  name: String;
+  type: Type;
+  constructor(name: String, type: Type) {
+    this.name = name;
+    this.type = type;
+  }
+  toString(): String {
+    return this.name.add(": ").add(this.type.toString());
+  }
+}
+class FunctionDecl extends Statement {
+  name: String;
+  params: NameType[];
+  returnType: Type;
+  body: Block;
+  constructor(name: String, params: NameType[], returnType: Type, body: Block) {
+    this.name = name;
+    this.params = params;
+    this.returnType = returnType;
+    this.body = body;
+  }
+  toString(): String {
+    let result: String = "function ".add(this.name).add("(");
     let i: i32 = 0;
-    while (i < node.args.length()) {
+    while (i < this.params.length()) {
       if (i > 0) result = result.add(", ");
-      result = result.add(ASTNode_toString(node.args[i]));
+      result = result.add(this.params[i].toString());
       ++i;
     }
-    result = result.add("): ").add(ASTNode_toString(node.left)).add(" ").add(ASTNode_toString(node.right));
-    return result;
+    return result.add("): ").add(this.returnType.toString()).add(" ").add(this.body.toString());
   }
-  if (node.type == AST_InterfaceDecl) {
-    let result: String = "interface ".add(node.name).add(" {\n");
+}
+
+class InterfaceDecl extends Statement {
+  name: String;
+  fields: NameType[];
+  constructor(name: String, fields: NameType[]) {
+    this.name = name;
+    this.fields = fields;
+  }
+  toString(): String {
+    let result: String = "interface ".add(this.name).add(" {\n");
     let i: i32 = 0;
-    while (i < node.args.length()) {
-      result = result.add("  ").add(ASTNode_toString(node.args[i])).add(";\n");
+    while (i < this.fields.length()) {
+      result = result.add("  ").add(this.fields[i].toString()).add(";\n");
       ++i;
     }
     return result.add("}");
   }
-  if (node.type == AST_Program) {
+}
+
+class Program extends ASTNode {
+  statements: Statement[];
+  constructor(statements: Statement[]) {
+    this.statements = statements;
+  }
+  toString(): String {
     let result: String = "";
     let i: i32 = 0;
-    while (i < node.args.length()) {
-      result = result.add(ASTNode_toString(node.args[i])).add("\n");
+    while (i < this.statements.length()) {
+      result = result.add(this.statements[i].toString()).add("\n");
       ++i;
     }
     return result;
   }
-  if (node.type == AST_Import) {
-    let result: String = "import {";
+}
+
+class Import extends Statement {
+  path: String;
+  constructor(path: String) {
+    this.path = path;
+  }
+  toString(): String {
+    return "import {} from ".add(this.path).add(";");
+  }
+}
+
+class Export extends Statement {
+  statement: Statement;
+  constructor(statement: Statement) {
+    this.statement = statement;
+  }
+  toString(): String {
+    return "export ".add(this.statement.toString());
+  }
+}
+
+class MethodDecl extends Statement {
+  name: String;
+  params: NameType[];
+  returnType: Type;
+  body: Block;
+  injectedName: String;
+  constructor(name: String, params: NameType[], returnType: Type, body: Block) {
+    this.name = name;
+    this.params = params;
+    this.returnType = returnType;
+    this.body = body;
+  }
+  toString(): String {
+    let result: String = this.name.add("(");
     let i: i32 = 0;
-    while (i < node.imports.length()) {
+    while (i < this.params.length()) {
       if (i > 0) result = result.add(", ");
-      result = result.add(node.imports[i]);
-      ++i;
-    }
-    return result.add("} from ").add(node.name).add(";");
-  }
-  if (node.type == AST_Export) {
-    return "export ".add(ASTNode_toString(node.right));
-  }
-  if (node.type == AST_ClassDecl) {
-    let result: String = "class ".add(node.name);
-    if (node.valueStr) result.add(" extends ").add(node.valueStr);
-    result = result.add(" {\n");
-    let i: i32 = 0;
-    while (i < node.args.length()) {
-      result = result.add("  ").add(ASTNode_toString(node.args[i])).add(";\n");
-      ++i;
-    }
-    i = 0;
-    while (i < node.methods.length()) {
-      result = result.add("  ").add(ASTNode_toString(node.methods[i])).add("\n");
-      ++i;
-    }
-    return result.add("}");
-  }
-  if (node.type == AST_MethodDecl) {
-    let result: String = node.name.add("(");
-    let i: i32 = 0;
-    while (i < node.args.length()) {
-      if (i > 0) result = result.add(", ");
-      result = result.add(ASTNode_toString(node.args[i]));
+      result = result.add(this.params[i].toString());
       ++i;
     }
     result = result.add(")");
-    if (node.left)
-      result = result.add(": ").add(ASTNode_toString(node.left));
-    return result.add(" ").add(ASTNode_toString(node.right));
+    if (this.returnType) result = result.add(": ").add(this.returnType.toString());
+    return result.add(" ").add(this.body.toString());
   }
-
-  return "UNKNOWN!!!";
+}
+class ClassDecl extends Statement {
+  name: String;
+  extend: String;
+  fields: NameType[];
+  methods: MethodDecl[];
+  constructor(name: String, extend: String, fields: NameType[], methods: MethodDecl[]) {
+    this.name = name;
+    this.extend = extend;
+    this.fields = fields;
+    this.methods = methods;
+  }
+  toString(): String {
+    let result: String = "class ".add(this.name);
+    if (this.extend) result = result.add(" extends ").add(this.extend);
+    result = result.add(" {\n");
+    let i: i32 = 0;
+    while (i < this.fields.length()) {
+      result = result.add("  ").add(this.fields[i].toString()).add(";\n");
+      ++i;
+    }
+    i = 0;
+    while (i < this.methods.length()) {
+      result = result.add("  ").add(this.methods[i].toString()).add(";\n");
+      ++i;
+    }
+    return result.add("}");
+  }
 }

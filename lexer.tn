@@ -1,185 +1,187 @@
-import { Token, Token_new } from "token";
+import { Token } from "token";
 
-interface Lexer {
+class Lexer {
   input: String;
   pos: i32;
   line: i32;
   column: i32;
-}
 
-function Lexer_peek(lexer: Lexer, offset: i32): String {
-  let p: i32 = lexer.pos + offset;
-  if (p < lexer.input.length())
-    return lexer.input[p];
-  return "\0";
-}
-
-function Lexer_advance(lexer: Lexer): String {
-  if (lexer.pos < lexer.input.length()) {
-    let c: String = lexer.input[lexer.pos++];
-    if (c === "\n") {
-      lexer.line++;
-      lexer.column = 1;
-    } else lexer.column++;
-    return c;
+  constructor(input: String) {
+    this.input = input;
+    this.pos = 0;
+    this.line = 1;
+    this.column = 1;
   }
-  return "\0";
-}
 
-function Lexer_skipWhitespace(lexer: Lexer): void {
-  let c: String = Lexer_peek(lexer, 0);
-  while (c === " " || c === "\t" || c === "\n" || c === "\r") {
-    Lexer_advance(lexer);
-    c = Lexer_peek(lexer, 0);
+  peek(offset: i32): String {
+    let p: i32 = this.pos + offset;
+    if (p < this.input.length())
+      return this.input[p];
+    return "\0";
   }
-}
 
-function Lexer_readNumber(lexer: Lexer): Token {
-  let startCol: i32 = lexer.column;
-  let num: String = "";
-  while (Lexer_peek(lexer, 0).isInt() || Lexer_peek(lexer, 0) === ".") num = num.add(Lexer_advance(lexer));
-  let token: Token = Token_new(TOKEN_NUMBER, num, lexer.line, startCol);
-  return token;
-}
-
-function Lexer_readString(lexer: Lexer): Token {
-  let startCol: i32 = lexer.column;
-  let quote: String = Lexer_advance(lexer);
-  let str: String = "".add(quote);
-  while (Lexer_peek(lexer, 0) !== quote && Lexer_peek(lexer, 0) !== "\0") {
-    if (Lexer_peek(lexer, 0) === "\\")
-      str = str.add(Lexer_advance(lexer));
-    str = str.add(Lexer_advance(lexer));
-  }
-  if (Lexer_peek(lexer, 0) === quote) str = str.add(Lexer_advance(lexer));
-  let token: Token = Token_new(TOKEN_STRING, str, lexer.line, startCol);
-  return token;
-}
-
-function Lexer_readIdentifier(lexer: Lexer): Token {
-  let startCol: i32 = lexer.column;
-  let id: String = "";
-  while (Lexer_peek(lexer, 0).isAlNum() || Lexer_peek(lexer, 0) === "_") id = id.add(Lexer_advance(lexer));
-
-  let keyword: i32 = TOKEN_IDENTIFIER;
-  if (id === "let") keyword = TOKEN_LET;
-  else if (id === "if") keyword = TOKEN_IF;
-  else if (id === "else") keyword = TOKEN_ELSE;
-  else if (id === "while") keyword = TOKEN_WHILE;
-  else if (id === "function") keyword = TOKEN_FUNCTION;
-  else if (id === "interface") keyword = TOKEN_INTERFACE;
-  else if (id === "return") keyword = TOKEN_RETURN;
-  else if (id === "as") keyword = TOKEN_AS;
-  else if (id === "extends") keyword = TOKEN_EXTENDS;
-  else if (id === "true") keyword = TOKEN_TRUE;
-  else if (id === "false") keyword = TOKEN_FALSE;
-  else if (id === "null") keyword = TOKEN_NULL;
-  else if (id === "import") keyword = TOKEN_IMPORT;
-  else if (id === "from") keyword = TOKEN_FROM;
-  else if (id === "export") keyword = TOKEN_EXPORT;
-  else if (id === "class") keyword = TOKEN_CLASS;
-  else if (id === "extends") keyword = TOKEN_EXTENDS;
-  else if (id === "new") keyword = TOKEN_NEW;
-  let token: Token = Token_new(keyword, id, lexer.line, startCol);
-  return token;
-}
-
-function Lexer_new(input: String): Lexer {
-  let lexer: Lexer = { input: input, pos: 0, line: 1, column: 1 };
-  return lexer;
-}
-
-function Lexer_nextToken(lexer: Lexer): Token {
-  Lexer_skipWhitespace(lexer);
-
-  if (lexer.pos >= lexer.input.length())
-    return Token_new(TOKEN_EOF, "", lexer.line, lexer.column);
-
-  let startCol: i32 = lexer.column;
-  let c: String = Lexer_peek(lexer, 0);
-
-  if (c.isInt()) return Lexer_readNumber(lexer);
-  if (c === "'" || c === "\"") return Lexer_readString(lexer);
-  if (c.isAlpha() || c === "_") return Lexer_readIdentifier(lexer);
-
-  if (c === "=" && Lexer_peek(lexer, 1) === "=") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    if (Lexer_peek(lexer, 0) === "=") {
-      Lexer_advance(lexer);
-      return Token_new(TOKEN_SEQ, "===", lexer.line, startCol);
+  advance(): String {
+    if (this.pos < this.input.length()) {
+      let c: String = this.input[this.pos++];
+      if (c === "\n") {
+        this.line++;
+        this.column = 1;
+      } else this.column++;
+      return c;
     }
-    return Token_new(TOKEN_EQ, "==", lexer.line, startCol);
+    return "\0";
   }
-  if (c === "!" && Lexer_peek(lexer, 1) === "=") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    if (Lexer_peek(lexer, 0) === "=") {
-      Lexer_advance(lexer);
-      return Token_new(TOKEN_SNE, "!==", lexer.line, startCol);
+
+  skipWhitespace(): void {
+    let c: String = this.peek(0);
+    while (c === " " || c === "\t" || c === "\n" || c === "\r") {
+      this.advance();
+      c = this.peek(0);
     }
-    return Token_new(TOKEN_NE, "!=", lexer.line, startCol);
-  }
-  if (c === "<" && Lexer_peek(lexer, 1) === "=") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_LE, "<=", lexer.line, startCol);
-  }
-  if (c === ">" && Lexer_peek(lexer, 1) === "=") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_GE, ">=", lexer.line, startCol);
-  }
-  if (c === "<" && Lexer_peek(lexer, 1) === "<") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_LSHIFT, "<<", lexer.line, startCol);
-  }
-  if (c === ">" && Lexer_peek(lexer, 1) === ">") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_RSHIFT, ">>", lexer.line, startCol);
-  }
-  if (c === "&" && Lexer_peek(lexer, 1) === "&") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_AND, "&&", lexer.line, startCol);
-  }
-  if (c === "|" && Lexer_peek(lexer, 1) === "|") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_OR, "||", lexer.line, startCol);
-  }
-  if (c === "+" && Lexer_peek(lexer, 1) === "+") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_INC, "++", lexer.line, startCol);
-  }
-  if (c === "-" && Lexer_peek(lexer, 1) === "-") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_DEC, "--", lexer.line, startCol);
-  }
-  if (c === "*" && Lexer_peek(lexer, 1) === "*") {
-    Lexer_advance(lexer); Lexer_advance(lexer);
-    return Token_new(TOKEN_POWER, "**", lexer.line, startCol);
   }
 
-  Lexer_advance(lexer);
-  if (c === "+") return Token_new(TOKEN_PLUS, "+", lexer.line, startCol);
-  if (c === "-") return Token_new(TOKEN_MINUS, "-", lexer.line, startCol);
-  if (c === "*") return Token_new(TOKEN_STAR, "*", lexer.line, startCol);
-  if (c === "/") return Token_new(TOKEN_SLASH, "/", lexer.line, startCol);
-  if (c === "%") return Token_new(TOKEN_PERCENT, "%", lexer.line, startCol);
-  if (c === "=") return Token_new(TOKEN_ASSIGN, "=", lexer.line, startCol);
-  if (c === "<") return Token_new(TOKEN_LT, "<", lexer.line, startCol);
-  if (c === ">") return Token_new(TOKEN_GT, ">", lexer.line, startCol);
-  if (c === "!") return Token_new(TOKEN_NOT, "!", lexer.line, startCol);
-  if (c === "&") return Token_new(TOKEN_BIT_AND, "&", lexer.line, startCol);
-  if (c === "|") return Token_new(TOKEN_BIT_OR, "|", lexer.line, startCol);
-  if (c === "^") return Token_new(TOKEN_BIT_XOR, "^", lexer.line, startCol);
-  if (c === "~") return Token_new(TOKEN_BIT_NOT, "~", lexer.line, startCol);
-  if (c === "(") return Token_new(TOKEN_LPAREN, "(", lexer.line, startCol);
-  if (c === ")") return Token_new(TOKEN_RPAREN, ")", lexer.line, startCol);
-  if (c === "{") return Token_new(TOKEN_LBRACE, "{", lexer.line, startCol);
-  if (c === "}") return Token_new(TOKEN_RBRACE, "}", lexer.line, startCol);
-  if (c === "[") return Token_new(TOKEN_LBRACKET, "[", lexer.line, startCol);
-  if (c === "]") return Token_new(TOKEN_RBRACKET, "]", lexer.line, startCol);
-  if (c === ",") return Token_new(TOKEN_COMMA, ",", lexer.line, startCol);
-  if (c === ":") return Token_new(TOKEN_COLON, ":", lexer.line, startCol);
-  if (c === ";") return Token_new(TOKEN_SEMICOLON, ";", lexer.line, startCol);
-  if (c === ".") return Token_new(TOKEN_DOT, ".", lexer.line, startCol);
+  readNumber(): Token {
+    let startCol: i32 = this.column;
+    let num: String = "";
+    while (this.peek(0).isInt() || this.peek(0) === ".") num = num.add(this.advance());
+    let token: Token = new Token(TOKEN_NUMBER, num, this.line, startCol);
+    return token;
+  }
 
-  print("Unexpected character:", lexer.line, lexer.column, c);
-  return Token_new(TOKEN_EOF, c, lexer.line, startCol);
+  readString(): Token {
+    let startCol: i32 = this.column;
+    let quote: String = this.advance();
+    let str: String = "".add(quote);
+    while (this.peek(0) !== quote && this.peek(0) !== "\0") {
+      if (this.peek(0) === "\\")
+        str = str.add(this.advance());
+      str = str.add(this.advance());
+    }
+    if (this.peek(0) === quote) str = str.add(this.advance());
+    let token: Token = new Token(TOKEN_STRING, str, this.line, startCol);
+    return token;
+  }
+
+  readIdentifier(): Token {
+    let startCol: i32 = this.column;
+    let id: String = "";
+    while (this.peek(0).isAlNum() || this.peek(0) === "_") id = id.add(this.advance());
+
+    let keyword: i32 = TOKEN_IDENTIFIER;
+    if (id === "let") keyword = TOKEN_LET;
+    else if (id === "if") keyword = TOKEN_IF;
+    else if (id === "else") keyword = TOKEN_ELSE;
+    else if (id === "while") keyword = TOKEN_WHILE;
+    else if (id === "function") keyword = TOKEN_FUNCTION;
+    else if (id === "interface") keyword = TOKEN_INTERFACE;
+    else if (id === "return") keyword = TOKEN_RETURN;
+    else if (id === "as") keyword = TOKEN_AS;
+    else if (id === "extends") keyword = TOKEN_EXTENDS;
+    else if (id === "true") keyword = TOKEN_TRUE;
+    else if (id === "false") keyword = TOKEN_FALSE;
+    else if (id === "null") keyword = TOKEN_NULL;
+    else if (id === "import") keyword = TOKEN_IMPORT;
+    else if (id === "from") keyword = TOKEN_FROM;
+    else if (id === "export") keyword = TOKEN_EXPORT;
+    else if (id === "class") keyword = TOKEN_CLASS;
+    else if (id === "extends") keyword = TOKEN_EXTENDS;
+    else if (id === "new") keyword = TOKEN_NEW;
+    let token: Token = new Token(keyword, id, this.line, startCol);
+    return token;
+  }
+
+  nextToken(): Token {
+    this.skipWhitespace();
+
+    if (this.pos >= this.input.length())
+      return new Token(TOKEN_EOF, "", this.line, this.column);
+
+    let startCol: i32 = this.column;
+    let c: String = this.peek(0);
+
+    if (c.isInt()) return this.readNumber();
+    if (c === "'" || c === "\"") return this.readString();
+    if (c.isAlpha() || c === "_") return this.readIdentifier();
+
+    if (c === "=" && this.peek(1) === "=") {
+      this.advance(); this.advance();
+      if (this.peek(0) === "=") {
+        this.advance();
+        return new Token(TOKEN_SEQ, "===", this.line, startCol);
+      }
+      return new Token(TOKEN_EQ, "==", this.line, startCol);
+    }
+    if (c === "!" && this.peek(1) === "=") {
+      this.advance(); this.advance();
+      if (this.peek(0) === "=") {
+        this.advance();
+        return new Token(TOKEN_SNE, "!==", this.line, startCol);
+      }
+      return new Token(TOKEN_NE, "!=", this.line, startCol);
+    }
+    if (c === "<" && this.peek(1) === "=") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_LE, "<=", this.line, startCol);
+    }
+    if (c === ">" && this.peek(1) === "=") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_GE, ">=", this.line, startCol);
+    }
+    if (c === "<" && this.peek(1) === "<") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_LSHIFT, "<<", this.line, startCol);
+    }
+    if (c === ">" && this.peek(1) === ">") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_RSHIFT, ">>", this.line, startCol);
+    }
+    if (c === "&" && this.peek(1) === "&") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_AND, "&&", this.line, startCol);
+    }
+    if (c === "|" && this.peek(1) === "|") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_OR, "||", this.line, startCol);
+    }
+    if (c === "+" && this.peek(1) === "+") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_INC, "++", this.line, startCol);
+    }
+    if (c === "-" && this.peek(1) === "-") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_DEC, "--", this.line, startCol);
+    }
+    if (c === "*" && this.peek(1) === "*") {
+      this.advance(); this.advance();
+      return new Token(TOKEN_POWER, "**", this.line, startCol);
+    }
+
+    this.advance();
+    if (c === "+") return new Token(TOKEN_PLUS, "+", this.line, startCol);
+    if (c === "-") return new Token(TOKEN_MINUS, "-", this.line, startCol);
+    if (c === "*") return new Token(TOKEN_STAR, "*", this.line, startCol);
+    if (c === "/") return new Token(TOKEN_SLASH, "/", this.line, startCol);
+    if (c === "%") return new Token(TOKEN_PERCENT, "%", this.line, startCol);
+    if (c === "=") return new Token(TOKEN_ASSIGN, "=", this.line, startCol);
+    if (c === "<") return new Token(TOKEN_LT, "<", this.line, startCol);
+    if (c === ">") return new Token(TOKEN_GT, ">", this.line, startCol);
+    if (c === "!") return new Token(TOKEN_NOT, "!", this.line, startCol);
+    if (c === "&") return new Token(TOKEN_BIT_AND, "&", this.line, startCol);
+    if (c === "|") return new Token(TOKEN_BIT_OR, "|", this.line, startCol);
+    if (c === "^") return new Token(TOKEN_BIT_XOR, "^", this.line, startCol);
+    if (c === "~") return new Token(TOKEN_BIT_NOT, "~", this.line, startCol);
+    if (c === "(") return new Token(TOKEN_LPAREN, "(", this.line, startCol);
+    if (c === ")") return new Token(TOKEN_RPAREN, ")", this.line, startCol);
+    if (c === "{") return new Token(TOKEN_LBRACE, "{", this.line, startCol);
+    if (c === "}") return new Token(TOKEN_RBRACE, "}", this.line, startCol);
+    if (c === "[") return new Token(TOKEN_LBRACKET, "[", this.line, startCol);
+    if (c === "]") return new Token(TOKEN_RBRACKET, "]", this.line, startCol);
+    if (c === ",") return new Token(TOKEN_COMMA, ",", this.line, startCol);
+    if (c === ":") return new Token(TOKEN_COLON, ":", this.line, startCol);
+    if (c === ";") return new Token(TOKEN_SEMICOLON, ";", this.line, startCol);
+    if (c === ".") return new Token(TOKEN_DOT, ".", this.line, startCol);
+
+    print("Unexpected character:", this.line, this.column, c);
+    return new Token(TOKEN_EOF, c, this.line, startCol);
+  }
 }

@@ -106,7 +106,10 @@ public:
   std::size_t getRef() const noexcept { return meta ? meta->getRef() : 0; }
   std::size_t getWeak() const noexcept { return meta ? meta->getWeak() - 1 : 0; }
 
-  template <typename U> AutoRef<U> as() const noexcept { return AutoRef<U>(dynamic_cast<U *>(obj)); }
+  template <typename U> AutoRef<U> as() const noexcept {
+    U *u = dynamic_cast<U *>(obj);
+    return u ? AutoRef<U>(u) : AutoRef<U>();
+  }
 
   template <typename... Args> static AutoRef make(Args &&...args) {
     T *obj = new T(std::forward<Args>(args)...);

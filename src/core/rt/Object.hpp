@@ -41,8 +41,6 @@ public:
   template <typename T> bool operator==(const T &that) const { return this == that; }
   template <typename T> bool operator!=(const T &that) const { return this != that; }
 
-  virtual std::string toString() const { return typeid(*this).name(); }
-
   virtual void $forEachChild(std::function<void(Object *)> visitor) const noexcept {}
 };
 
