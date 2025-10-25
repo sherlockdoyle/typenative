@@ -3,6 +3,8 @@
 #include "../ds/string.hpp"
 #include "../rt/AutoRef.hpp"
 #include "../rt/Object.hpp"
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <string>
@@ -46,3 +48,11 @@ public:
 };
 
 inline $File open(const $String &fname, const $String &mode) { return $File::make(fname, mode); }
+
+inline $String cwd_() { return $String::make(std::filesystem::current_path().string()); }
+inline bool exists_(const $String &fname) { return std::filesystem::exists(fname->_str()); }
+inline bool mkdir_(const $String &fname) { return std::filesystem::create_directories(fname->_str()); }
+inline bool isFile_(const $String &fname) { return std::filesystem::is_regular_file(fname->_str()); }
+inline bool isDir_(const $String &fname) { return std::filesystem::is_directory(fname->_str()); }
+inline void rmdir_(const $String &fname) { std::filesystem::remove_all(fname->_str()); }
+inline $String home_() { return $String::make(std::getenv("HOME")); }

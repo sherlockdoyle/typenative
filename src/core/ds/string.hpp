@@ -35,6 +35,24 @@ public:
     return out;
   }
 
+  std::ptrdiff_t indexOf(const $String &that) const noexcept {
+    auto pos = str.find(that->str);
+    return pos == std::string::npos ? -1 : pos;
+  }
+  std::ptrdiff_t indexOf(const $String &that, const std::size_t position) const noexcept {
+    auto pos = str.find(that->str, position);
+    return pos == std::string::npos ? -1 : pos;
+  }
+  std::ptrdiff_t lastIndexOf(const $String &that) const noexcept {
+    auto pos = str.rfind(that->str);
+    return pos == std::string::npos ? -1 : pos;
+  }
+  std::ptrdiff_t lastIndexOf(const $String &that, const std::size_t position) const noexcept {
+    auto pos = str.rfind(that->str, position);
+    return pos == std::string::npos ? -1 : pos;
+  }
+
+  $String substring(const std::size_t start) const noexcept { return substring(start, str.length()); }
   $String substring(const std::size_t start, const std::size_t end) const noexcept {
     std::size_t i = std::max(0ul, start), j = std::min(end, str.length());
     return $String::make(str.substr(i, j - i));

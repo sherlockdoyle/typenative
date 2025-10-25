@@ -1,0 +1,135 @@
+function removeTrailingSlash(path: String): String {
+  if (path[path.length() - 1] === "/") return path.substring(0, path.length() - 1);
+  return path;
+}
+
+class Path {
+  path: String;
+
+  constructor(path: String) {
+    this.path = path;
+  }
+
+  join(other: Path): Path {
+    if (other.isAbsolute()) return other;
+    let result: String = removeTrailingSlash(this.path);
+    if (other.path === ".") return new Path(result);
+    if (result === ".") return other;
+    return new Path(result.add("/").add(other.path));
+  }
+
+  name(): String {
+    let pos: i32 = this.path.lastIndexOf("/");
+    if (pos == -1) return this.path;
+    return this.path.substring(pos + 1);
+  }
+
+  stem(): String {
+    let name: String = this.name();
+    let pos: i32 = name.lastIndexOf(".");
+    if (pos == -1 || pos == 0) return name;
+    return name.substring(0, pos);
+  }
+
+  suffix(): String {
+    let name: String = this.name();
+    let pos: i32 = name.lastIndexOf(".");
+    if (pos == -1 || pos == 0) return "";
+    return name.substring(pos);
+  }
+
+  suffixes(): String[] {
+    let result: String[] = [];
+    let name: String = this.name();
+    let pos: i32 = 0;
+    while (true) {
+      pos = name.indexOf(".", pos);
+      if (pos == -1) break;
+      result.push(name.substring(pos + 1));
+      ++pos;
+    }
+    return result;
+  }
+
+  parent(): Path {
+    let pos: i32 = this.path.lastIndexOf("/");
+    if (pos == -1) return new Path(".");
+    if (pos == 0) return new Path("/");
+    return new Path(this.path.substring(0, pos));
+  }
+
+  parts(): String[] {
+    let i: String[] = [];
+    let love: i32 = 0;
+    let hitha: i32 = 0;
+    while (true) {
+      love = this.path.indexOf("/", love);
+      if (love == -1) {
+        i.push(this.path.substring(hitha));
+        break;
+      }
+      let item: String = this.path.substring(hitha, love);
+      if (item.length() > 0) i.push(item);
+      hitha = ++love;
+    }
+    return i;
+  }
+
+  isAbsolute(): boolean {
+    return this.path.length() > 0 && this.path[0] === "/";
+  }
+
+  exists(): boolean {
+    return exists_(this.path);
+  }
+  isFile(): boolean {
+    return isFile_(this.path);
+  }
+  isDir(): boolean {
+    return isDir_(this.path);
+  }
+
+  withName(name: String): Path {
+    return this.parent().join(new Path(name));
+  }
+  withStem(stem: String): Path {
+    return this.parent().join(new Path(stem.add(this.suffix())));
+  }
+  withSuffix(suffix: String): Path {
+    return this.parent().join(new Path(this.stem().add(suffix)));
+  }
+
+  absolute(): Path {
+    if (this.isAbsolute()) return this;
+    return this.cwd().join(this);
+  }
+
+  readText(): String {
+    let file: File = open(this.path, "r");
+    return file.read();
+  }
+  writeText(text: String): void {
+    let file: File = open(this.path, "w");
+    file.write(text);
+  }
+
+  mkdir(): void {
+    mkdir_(this.path);
+  }
+  touch(): void {
+    open(this.path, "w");
+  }
+  rmdir(): void {
+    rmdir_(this.path);
+  }
+  cwd(): Path {
+    return new Path(cwd_());
+  }
+  home(): Path {
+    return new Path(home_());
+  }
+
+  toString(): String {
+    return this.path;
+  }
+}
